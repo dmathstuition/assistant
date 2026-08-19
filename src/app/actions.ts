@@ -66,11 +66,13 @@ export async function addTask(formData: FormData) {
   const title = String(formData.get("title") || "").trim();
   if (!title) throw new Error("Enter a task title.");
   const due = String(formData.get("due_date") || "");
+  const time = String(formData.get("due_time") || "");
   await supabase.from("tasks").insert({
     user_id: user.id,
     title,
     priority: String(formData.get("priority") || "medium"),
     due_date: due || null,
+    due_time: time || null,
   });
   revalidatePath("/dashboard");
 }
@@ -217,6 +219,111 @@ export async function saveAssistantAction(action: AssistantAction) {
     throw new Error("Nothing to save for this request.");
   }
   revalidatePath("/dashboard");
+}
+
+// ---- Recurring rules (auto-logged transactions like rent/salary) ----
+
+export async function addRecurringRule(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const kind = formData.get("kind") === "income" ? "income" : "expense";
+  const amount = Number(formData.get("amount"));
+  if (!amount || amount <= 0) throw new Error("Enter a valid amount.");
+  const category = String(formData.get("category") || "Other").trim() || "Other";
+  const freqRaw = String(formData.get("frequency") || "monthly");
+  const frequency = ["daily", "weekly", "monthly"].includes(freqRaw)
+    ? freqRaw
+    : "monthly";
+  const next_run =
+    String(formData.get("next_run") || "") ||
+    new Date().toISOString().slice(0, 10);
+  await supabase.from("recurring_rules").insert({
+    user_id: user.id,
+    kind,
+    amount,
+    category,
+    frequency,
+    next_run,
+  });
+  revalidatePath("/dashboard");
+}
+
+export async function deleteRecurringRule(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("recurring_rules").delete().eq("id", id);
+  revalidatePath("/dashboard");
+}
+
+// ---- Edit / delete (RLS scopes every mutation to the caller's own rows) ----
+
+function revalidateAll() {
+  revalidatePath("/dashboard");
+  revalidatePath("/history");
+}
+
+export async function deleteExpense(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("expenses").delete().eq("id", id);
+  revalidateAll();
+}
+
+export async function deleteIncome(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("income").delete().eq("id", id);
+  revalidateAll();
+}
+
+export async function deleteTask(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("tasks").delete().eq("id", id);
+  revalidateAll();
+}
+
+export async function deleteBudget(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("budgets").delete().eq("id", id);
+  revalidateAll();
+}
+
+export async function deleteSavingsGoal(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("savings_goals").delete().eq("id", id);
+  revalidateAll();
+}
+
+export async function updateExpense(
+  id: string,
+  data: { amount: number; category: string; description: string | null; occurred_on: string },
+) {
+  const { supabase } = await requireUser();
+  if (!data.amount || data.amount <= 0) throw new Error("Enter a valid amount.");
+  await supabase
+    .from("expenses")
+    .update({
+      amount: data.amount,
+      category: data.category.trim() || "Other",
+      description: data.description?.trim() || null,
+      occurred_on: data.occurred_on,
+    })
+    .eq("id", id);
+  revalidateAll();
+}
+
+export async function updateIncome(
+  id: string,
+  data: { amount: number; source_name: string; description: string | null; occurred_on: string },
+) {
+  const { supabase } = await requireUser();
+  if (!data.amount || data.amount <= 0) throw new Error("Enter a valid amount.");
+  await supabase
+    .from("income")
+    .update({
+      amount: data.amount,
+      source_name: data.source_name.trim() || "Other",
+      description: data.description?.trim() || null,
+      occurred_on: data.occurred_on,
+    })
+    .eq("id", id);
+  revalidateAll();
 }
 
 export type ImportRow = {

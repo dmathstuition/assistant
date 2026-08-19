@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { sendMail, appScriptConfigured } from "@/lib/google/appscript";
+import { sendPush, pushConfigured, type PushSub } from "@/lib/push";
 
 // Daily Vercel Cron (see vercel.json). Finds reminders due today across ALL
 // users and emails each user their own reminders.
@@ -34,7 +35,8 @@ export async function GET(req: Request) {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceKey || !appScriptConfigured()) {
+  // Need at least one delivery channel (email via Apps Script, or web push).
+  if (!url || !serviceKey || !(appScriptConfigured() || pushConfigured())) {
     return NextResponse.json({ ok: false, reason: "not configured" }, { status: 500 });
   }
 
@@ -62,40 +64,92 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: true, sent: 0 });
   }
 
-  // Resolve each user's email from auth.users (not in the public schema, so we
-  // use the admin API). One lookup per distinct user.
+  const userIds = [...new Set(due.map((r) => r.user_id))];
+
+  // Resolve each user's email from auth.users (admin API) and their push subs.
   const emailById = new Map<string, string>();
   await Promise.all(
-    [...new Set(due.map((r) => r.user_id))].map(async (uid) => {
+    userIds.map(async (uid) => {
       const { data } = await db.auth.admin.getUserById(uid);
       if (data.user?.email) emailById.set(uid, data.user.email);
     }),
   );
 
-  // (3) Email each reminder to its own owner. Mark one-off reminders done so a
-  // second cron run the same day can't double-send; recurring ones are left as
-  // is (their remind_at only matches the day it's set for).
+  const subsByUser = new Map<string, (PushSub & { id: string })[]>();
+  if (pushConfigured()) {
+    const { data: subs } = await db
+      .from("push_subscriptions")
+      .select("id,user_id,endpoint,p256dh,auth")
+      .in("user_id", userIds);
+    for (const s of subs ?? []) {
+      const list = subsByUser.get(s.user_id) ?? [];
+      list.push({ id: s.id, endpoint: s.endpoint, p256dh: s.p256dh, auth: s.auth });
+      subsByUser.set(s.user_id, list);
+    }
+  }
+
+  // (3) Deliver each reminder to its own owner over email + push. Mark one-off
+  // reminders done so a second cron run the same day can't double-send;
+  // recurring ones are advanced separately by the recurring cron.
   let sent = 0;
   const doneIds: string[] = [];
+  const staleSubIds: string[] = [];
   for (const r of due) {
+    let delivered = false;
+
     const to = emailById.get(r.user_id);
-    if (!to) continue;
-    const res = await sendMail(
-      to,
-      `Reminder: ${r.title}`,
-      `<p>This is your D-Maths reminder:</p><p><b>${escapeHtml(r.title)}</b></p>`,
-    );
-    if (res.ok) {
+    if (to && appScriptConfigured()) {
+      const res = await sendMail(
+        to,
+        `Reminder: ${r.title}`,
+        `<p>This is your D-Maths reminder:</p><p><b>${escapeHtml(r.title)}</b></p>`,
+      );
+      if (res.ok) delivered = true;
+    }
+
+    for (const sub of subsByUser.get(r.user_id) ?? []) {
+      const res = await sendPush(sub, {
+        title: "D-Maths reminder",
+        body: r.title,
+        url: "/dashboard",
+      });
+      if (res.ok) delivered = true;
+      if (res.gone) staleSubIds.push(sub.id);
+    }
+
+    if (delivered) {
       sent++;
-      if (!r.recurring) doneIds.push(r.id);
+      if (r.recurring) {
+        // Roll a recurring reminder forward to its next occurrence.
+        await db
+          .from("reminders")
+          .update({ remind_at: advanceReminder(r.remind_at, r.recurring) })
+          .eq("id", r.id);
+      } else {
+        doneIds.push(r.id);
+      }
     }
   }
 
   if (doneIds.length) {
     await db.from("reminders").update({ is_done: true }).in("id", doneIds);
   }
+  if (staleSubIds.length) {
+    await db.from("push_subscriptions").delete().in("id", staleSubIds);
+  }
 
   return NextResponse.json({ ok: true, due: due.length, sent });
+}
+
+// Advance a recurring reminder's timestamp to its next occurrence.
+function advanceReminder(remindAt: string, recurring: string): string {
+  const d = new Date(remindAt);
+  const freq = recurring.toLowerCase();
+  if (freq.includes("day")) d.setUTCDate(d.getUTCDate() + 1);
+  else if (freq.includes("week")) d.setUTCDate(d.getUTCDate() + 7);
+  else if (freq.includes("year")) d.setUTCFullYear(d.getUTCFullYear() + 1);
+  else d.setUTCMonth(d.getUTCMonth() + 1); // default monthly
+  return d.toISOString();
 }
 
 // Reminder titles are user-supplied; escape before dropping into the email HTML.

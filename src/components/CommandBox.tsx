@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { saveAssistantAction } from "@/app/actions";
 import { naira } from "@/components/Naira";
+import { SparklesIcon } from "@/components/icons";
 
 type Action = {
   intent: string;
@@ -87,7 +88,8 @@ export default function CommandBox() {
 
   return (
     <div className="card p-5">
-      <div className="mb-3 text-sm font-semibold text-brand-muted">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-brand-muted">
+        <SparklesIcon className="text-base text-brand-accent" />
         Ask your assistant
       </div>
 

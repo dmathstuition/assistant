@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { hashPin, PIN_KEY } from "@/components/AppLock";
+import { LockIcon } from "@/components/icons";
 
 // Set, change, or remove the PWA PIN lock. Stores only the SHA-256 hash in this
 // browser's localStorage — the PIN itself never leaves the device.
@@ -34,7 +35,8 @@ export default function PinSettings() {
 
   return (
     <div className="card p-5">
-      <div className="mb-3 text-sm font-semibold text-brand-muted">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-brand-muted">
+        <LockIcon className="text-base text-brand-accent" />
         App lock (PIN)
       </div>
       <p className="mb-3 text-xs text-brand-muted">

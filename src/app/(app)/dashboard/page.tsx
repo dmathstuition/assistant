@@ -7,9 +7,17 @@ import SavingsGoals, { type GoalRow } from "@/components/SavingsGoals";
 import ExportButton from "@/components/ExportButton";
 import ImportCsv from "@/components/ImportCsv";
 import PinSettings from "@/components/PinSettings";
+import NotificationToggle from "@/components/NotificationToggle";
+import RecurringRules, { type RuleRow } from "@/components/RecurringRules";
 import SpendingDonut, { type Slice } from "@/components/SpendingDonut";
 import TrendChart, { type MonthPoint } from "@/components/TrendChart";
 import { naira } from "@/components/Naira";
+import {
+  IncomeIcon,
+  WalletIcon,
+  TrendingUpIcon,
+  ChecklistIcon,
+} from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -52,12 +60,13 @@ function greeting() {
 type Row = { amount: number };
 type ExpenseRow = { amount: number; category: string | null };
 type DatedRow = { amount: number; occurred_on: string };
-type Budget = { category: string; monthly_limit: number };
+type Budget = { id: string; category: string; monthly_limit: number };
 type Task = {
   id: string;
   title: string;
   status: string;
   due_date: string | null;
+  due_time: string | null;
   priority: string;
 };
 
@@ -74,6 +83,7 @@ export default async function Dashboard() {
     { data: goalRows },
     { data: expTrend },
     { data: incTrend },
+    { data: ruleRows },
   ] = await Promise.all([
       supabase
         .from("expenses")
@@ -82,11 +92,11 @@ export default async function Dashboard() {
       supabase.from("income").select("amount").gte("occurred_on", start),
       supabase
         .from("tasks")
-        .select("id,title,status,due_date,priority")
+        .select("id,title,status,due_date,due_time,priority")
         .neq("status", "completed")
         .order("created_at", { ascending: false })
         .limit(8),
-      supabase.from("budgets").select("category,monthly_limit"),
+      supabase.from("budgets").select("id,category,monthly_limit"),
       supabase
         .from("savings_goals")
         .select("id,name,target_amount,current_amount,deadline")
@@ -99,6 +109,10 @@ export default async function Dashboard() {
         .from("income")
         .select("amount,occurred_on")
         .gte("occurred_on", trendStart),
+      supabase
+        .from("recurring_rules")
+        .select("id,kind,amount,category,frequency,next_run")
+        .order("next_run", { ascending: true }),
     ]);
 
   const expenses = (exp as ExpenseRow[]) ?? [];
@@ -114,6 +128,7 @@ export default async function Dashboard() {
     spentByCategory.set(key, (spentByCategory.get(key) ?? 0) + Number(e.amount));
   }
   const budgets: BudgetRow[] = ((budgetRows as Budget[]) ?? []).map((b) => ({
+    id: b.id,
     category: b.category,
     monthly_limit: Number(b.monthly_limit),
     spent: spentByCategory.get(b.category.toLowerCase()) ?? 0,
@@ -153,6 +168,11 @@ export default async function Dashboard() {
     expense: b.expense,
   }));
 
+  const rules: RuleRow[] = ((ruleRows as RuleRow[]) ?? []).map((r) => ({
+    ...r,
+    amount: Number(r.amount),
+  }));
+
   return (
     <div className="space-y-6">
       <div>
@@ -168,14 +188,31 @@ export default async function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Stat label="Income this month" value={naira(totalInc)} />
-        <Stat label="Expenses this month" value={naira(totalExp)} />
+        <Stat
+          label="Income this month"
+          value={naira(totalInc)}
+          icon={<IncomeIcon />}
+          tint="text-green-400"
+        />
+        <Stat
+          label="Expenses this month"
+          value={naira(totalExp)}
+          icon={<WalletIcon />}
+          tint="text-brand-accent"
+        />
         <Stat
           label="Net this month"
           value={naira(net)}
           accent={net < 0 ? "text-red-400" : "text-green-400"}
+          icon={<TrendingUpIcon />}
+          tint={net < 0 ? "text-red-400" : "text-green-400"}
         />
-        <Stat label="Open tasks" value={String(taskList.length)} />
+        <Stat
+          label="Open tasks"
+          value={String(taskList.length)}
+          icon={<ChecklistIcon />}
+          tint="text-sky-400"
+        />
       </div>
 
       <CommandBox />
@@ -189,7 +226,8 @@ export default async function Dashboard() {
         <QuickAdd />
 
         <div className="card p-5">
-          <div className="mb-3 text-sm font-semibold text-brand-muted">
+          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-brand-muted">
+            <ChecklistIcon className="text-base text-sky-400" />
             Open tasks
           </div>
           {taskList.length === 0 ? (
@@ -211,12 +249,17 @@ export default async function Dashboard() {
         <SavingsGoals goals={goals} />
       </div>
 
+      <RecurringRules rules={rules} />
+
       <div className="grid gap-6 lg:grid-cols-2">
         <ExportButton />
         <ImportCsv />
       </div>
 
-      <PinSettings />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <NotificationToggle />
+        <PinSettings />
+      </div>
     </div>
   );
 }
@@ -225,14 +268,21 @@ function Stat({
   label,
   value,
   accent,
+  icon,
+  tint,
 }: {
   label: string;
   value: string;
   accent?: string;
+  icon?: React.ReactNode;
+  tint?: string;
 }) {
   return (
     <div className="card p-4">
-      <div className="text-xs text-brand-muted">{label}</div>
+      <div className="flex items-center gap-2 text-xs text-brand-muted">
+        {icon && <span className={`text-base ${tint ?? ""}`}>{icon}</span>}
+        {label}
+      </div>
       <div className={`mt-1 text-lg font-bold ${accent ?? ""}`}>{value}</div>
     </div>
   );

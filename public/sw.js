@@ -2,7 +2,7 @@
 // makes it installable. Pages use network-first (data stays fresh; the cached
 // copy is only a fallback when the phone is offline); static assets are
 // cache-first. API and auth requests are never cached.
-const CACHE = "dmaths-v1";
+const CACHE = "dmaths-v2";
 const FALLBACK = "/dashboard";
 const PRECACHE = ["/dashboard", "/login", "/icon-192.png"];
 
@@ -25,6 +25,39 @@ self.addEventListener("activate", (event) => {
       ),
   );
   self.clients.claim();
+});
+
+// Web Push: show the notification the reminder/alert cron sent.
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch (e) {
+    data = {};
+  }
+  const title = data.title || "D-Maths";
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || "",
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      data: { url: data.url || "/dashboard" },
+    }),
+  );
+});
+
+// Focus an existing tab (or open one) when a notification is tapped.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = (event.notification.data && event.notification.data.url) || "/dashboard";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((cs) => {
+      for (const c of cs) {
+        if (c.url.includes(target) && "focus" in c) return c.focus();
+      }
+      return self.clients.openWindow(target);
+    }),
+  );
 });
 
 self.addEventListener("fetch", (event) => {

@@ -1,4 +1,5 @@
 import { naira } from "@/components/Naira";
+import { PieIcon } from "@/components/icons";
 
 // Spending-by-category donut for the current month. Categorical identity job:
 // fixed-order CVD-safe hues (validated for the dark card surface), capped at the
@@ -54,7 +55,8 @@ export default function SpendingDonut({ slices }: { slices: Slice[] }) {
 
   return (
     <div className="card p-5">
-      <div className="mb-3 text-sm font-semibold text-brand-muted">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-brand-muted">
+        <PieIcon className="text-base text-brand-accent" />
         Spending by category · this month
       </div>
 

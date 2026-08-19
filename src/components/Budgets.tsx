@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { upsertBudget } from "@/app/actions";
+import { upsertBudget, deleteBudget } from "@/app/actions";
 import { naira } from "@/components/Naira";
+import { WalletIcon, TrashIcon } from "@/components/icons";
 
 const EXPENSE_CATEGORIES = [
   "Food",
@@ -20,6 +21,7 @@ const EXPENSE_CATEGORIES = [
 ];
 
 export type BudgetRow = {
+  id: string;
   category: string;
   monthly_limit: number;
   spent: number;
@@ -52,7 +54,8 @@ export default function Budgets({ budgets }: { budgets: BudgetRow[] }) {
 
   return (
     <div className="card p-5">
-      <div className="mb-3 text-sm font-semibold text-brand-muted">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-brand-muted">
+        <WalletIcon className="text-base text-brand-accent" />
         Monthly budgets
       </div>
 
@@ -108,11 +111,22 @@ export default function Budgets({ budgets }: { budgets: BudgetRow[] }) {
                   ? "bg-orange-500"
                   : "bg-brand-accent";
             return (
-              <div key={b.category}>
-                <div className="flex items-baseline justify-between text-sm">
+              <div key={b.id}>
+                <div className="flex items-baseline justify-between gap-2 text-sm">
                   <span className="font-medium">{b.category}</span>
-                  <span className="text-brand-muted">
+                  <span className="flex items-center gap-2 text-brand-muted">
                     {naira(b.spent)} / {naira(b.monthly_limit)}
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        if (confirm(`Delete the ${b.category} budget?`))
+                          await deleteBudget(b.id);
+                      }}
+                      title="Delete budget"
+                      className="opacity-60 transition hover:text-red-400 hover:opacity-100"
+                    >
+                      <TrashIcon className="text-sm" />
+                    </button>
                   </span>
                 </div>
                 <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-brand-bg">

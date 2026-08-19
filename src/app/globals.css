@@ -7,13 +7,56 @@
 }
 
 body {
-  background: #0A1628;
+  min-height: 100vh;
   color: #e8eefc;
+  background-color: #060d1a;
+  /* Ambient colour field the glass panels blur over. */
+  background-image:
+    radial-gradient(60rem 60rem at 85% -10%, rgba(255, 107, 43, 0.18), transparent 60%),
+    radial-gradient(55rem 55rem at -10% 20%, rgba(37, 99, 235, 0.22), transparent 55%),
+    radial-gradient(45rem 45rem at 50% 120%, rgba(16, 185, 129, 0.12), transparent 60%);
+  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
 }
 
-.card {
-  background: #0f1f38;
-  border: 1px solid #1c3050;
-  border-radius: 16px;
+@layer components {
+  /* Glassmorphism panel. */
+  .card {
+    background: rgba(18, 32, 56, 0.55);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  /* A quieter inner surface (inputs, wells) that still reads on glass. */
+  .well {
+    background: rgba(8, 16, 32, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+  }
+
+  /* Primary action: gradient with a soft glow. */
+  .btn-accent {
+    background: linear-gradient(135deg, #ff6b2b, #f97316);
+    box-shadow: 0 6px 18px rgba(255, 107, 43, 0.35);
+    transition: filter 0.15s ease, transform 0.05s ease;
+  }
+  .btn-accent:hover {
+    filter: brightness(1.06);
+  }
+  .btn-accent:active {
+    transform: translateY(1px);
+  }
+
+  .btn-ghost {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: background 0.15s ease;
+  }
+  .btn-ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+  }
 }

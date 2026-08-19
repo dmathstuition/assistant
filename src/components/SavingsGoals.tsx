@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { addSavingsGoal, logContribution } from "@/app/actions";
+import { addSavingsGoal, logContribution, deleteSavingsGoal } from "@/app/actions";
 import { naira } from "@/components/Naira";
+import { PiggyIcon, TrashIcon } from "@/components/icons";
 
 export type GoalRow = {
   id: string;
@@ -43,10 +44,21 @@ function Goal({ goal }: { goal: GoalRow }) {
 
   return (
     <div>
-      <div className="flex items-baseline justify-between text-sm">
+      <div className="flex items-baseline justify-between gap-2 text-sm">
         <span className="font-medium">{goal.name}</span>
-        <span className="text-brand-muted">
+        <span className="flex items-center gap-2 text-brand-muted">
           {naira(goal.current_amount)} / {naira(goal.target_amount)}
+          <button
+            type="button"
+            onClick={async () => {
+              if (confirm(`Delete the "${goal.name}" goal?`))
+                await deleteSavingsGoal(goal.id);
+            }}
+            title="Delete goal"
+            className="opacity-60 transition hover:text-red-400 hover:opacity-100"
+          >
+            <TrashIcon className="text-sm" />
+          </button>
         </span>
       </div>
       <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-brand-bg">
@@ -110,7 +122,8 @@ export default function SavingsGoals({ goals }: { goals: GoalRow[] }) {
 
   return (
     <div className="card p-5">
-      <div className="mb-3 text-sm font-semibold text-brand-muted">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-brand-muted">
+        <PiggyIcon className="text-base text-brand-accent" />
         Savings goals
       </div>
 
