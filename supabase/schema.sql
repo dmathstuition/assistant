@@ -127,3 +127,25 @@ create table if not exists public.keep_alive (
   pinged_at timestamptz not null default now()
 );
 alter table public.keep_alive enable row level security;
+
+-- =====================================================================
+--  MIGRATION: BUDGETS (added after Phase 1)
+--  Paste this block on its own into Supabase → SQL Editor → Run.
+--  One monthly spending limit per category, per user. RLS matches the
+--  other data tables so a user only ever sees or edits their own rows.
+-- =====================================================================
+create table if not exists public.budgets (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  category text not null,
+  monthly_limit numeric(14,2) not null check (monthly_limit >= 0),
+  created_at timestamptz not null default now(),
+  unique (user_id, category)
+);
+
+create index if not exists idx_budgets_user on public.budgets(user_id);
+
+alter table public.budgets enable row level security;
+
+drop policy if exists "own budgets" on public.budgets;
+create policy "own budgets" on public.budgets for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

@@ -66,6 +66,24 @@ export async function toggleTask(id: string, done: boolean) {
   revalidatePath("/dashboard");
 }
 
+export async function upsertBudget(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const category = String(formData.get("category") || "").trim();
+  if (!category) throw new Error("Choose a category.");
+  const monthly_limit = Number(formData.get("monthly_limit"));
+  if (!monthly_limit || monthly_limit <= 0)
+    throw new Error("Enter a valid monthly limit.");
+  await supabase.from("budgets").upsert(
+    {
+      user_id: user.id,
+      category,
+      monthly_limit,
+    },
+    { onConflict: "user_id,category" },
+  );
+  revalidatePath("/dashboard");
+}
+
 type AssistantAction = {
   intent: string;
   amount?: number | null;
