@@ -136,3 +136,24 @@ function handleMail(d) {
   MailApp.sendEmail({ to: d.to, subject: d.subject, htmlBody: d.html });
   return { ok: true };
 }
+
+// ---------------------------------------------------------------------
+//  TASK ALARMS (optional) — fire notifications even when the app is closed.
+//  Apps Script time triggers are free and can run every few minutes, so we
+//  use one to poke the app's alarm endpoint on a schedule.
+//
+//  SETUP
+//   1. Set ALARM_URL below to your deployed endpoint INCLUDING the secret:
+//        https://YOUR-APP.vercel.app/api/alarms/push?key=YOUR_CRON_SECRET
+//   2. In the Apps Script editor: Triggers (clock icon) → Add Trigger →
+//        Function: runAlarms
+//        Event source: Time-driven → Minutes timer → Every 5 minutes
+//   That's it — the endpoint checks which tasks are due (or due in 10 min)
+//   and pushes to your phone. It de-duplicates, so a 5-minute cadence is fine.
+// ---------------------------------------------------------------------
+var ALARM_URL = "";
+
+function runAlarms() {
+  if (!ALARM_URL) return;
+  UrlFetchApp.fetch(ALARM_URL, { muteHttpExceptions: true });
+}

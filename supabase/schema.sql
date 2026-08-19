@@ -245,3 +245,24 @@ alter table public.recurring_rules enable row level security;
 
 drop policy if exists "own recurring_rules" on public.recurring_rules;
 create policy "own recurring_rules" on public.recurring_rules for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- =====================================================================
+--  MIGRATION: TASK ALERTS (added after Phase 1)
+--  Paste this block on its own into Supabase → SQL Editor → Run.
+--  One row per (task, kind, day) alarm already pushed, so the alarm cron
+--  never re-sends the 10-minute warning or the due-time alarm twice.
+-- =====================================================================
+create table if not exists public.task_alerts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  task_id uuid not null references public.tasks(id) on delete cascade,
+  kind text not null check (kind in ('warn','due')),
+  alert_date date not null,
+  created_at timestamptz not null default now(),
+  unique (task_id, kind, alert_date)
+);
+
+alter table public.task_alerts enable row level security;
+
+drop policy if exists "own task_alerts" on public.task_alerts;
+create policy "own task_alerts" on public.task_alerts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
