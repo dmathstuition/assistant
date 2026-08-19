@@ -59,7 +59,7 @@ function greeting() {
 type Row = { amount: number };
 type ExpenseRow = { amount: number; category: string | null };
 type DatedRow = { amount: number; occurred_on: string };
-type Budget = { category: string; monthly_limit: number };
+type Budget = { id: string; category: string; monthly_limit: number };
 type Task = {
   id: string;
   title: string;
@@ -94,7 +94,7 @@ export default async function Dashboard() {
         .neq("status", "completed")
         .order("created_at", { ascending: false })
         .limit(8),
-      supabase.from("budgets").select("category,monthly_limit"),
+      supabase.from("budgets").select("id,category,monthly_limit"),
       supabase
         .from("savings_goals")
         .select("id,name,target_amount,current_amount,deadline")
@@ -122,6 +122,7 @@ export default async function Dashboard() {
     spentByCategory.set(key, (spentByCategory.get(key) ?? 0) + Number(e.amount));
   }
   const budgets: BudgetRow[] = ((budgetRows as Budget[]) ?? []).map((b) => ({
+    id: b.id,
     category: b.category,
     monthly_limit: Number(b.monthly_limit),
     spent: spentByCategory.get(b.category.toLowerCase()) ?? 0,

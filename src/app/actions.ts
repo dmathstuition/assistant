@@ -221,6 +221,79 @@ export async function saveAssistantAction(action: AssistantAction) {
   revalidatePath("/dashboard");
 }
 
+// ---- Edit / delete (RLS scopes every mutation to the caller's own rows) ----
+
+function revalidateAll() {
+  revalidatePath("/dashboard");
+  revalidatePath("/history");
+}
+
+export async function deleteExpense(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("expenses").delete().eq("id", id);
+  revalidateAll();
+}
+
+export async function deleteIncome(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("income").delete().eq("id", id);
+  revalidateAll();
+}
+
+export async function deleteTask(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("tasks").delete().eq("id", id);
+  revalidateAll();
+}
+
+export async function deleteBudget(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("budgets").delete().eq("id", id);
+  revalidateAll();
+}
+
+export async function deleteSavingsGoal(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("savings_goals").delete().eq("id", id);
+  revalidateAll();
+}
+
+export async function updateExpense(
+  id: string,
+  data: { amount: number; category: string; description: string | null; occurred_on: string },
+) {
+  const { supabase } = await requireUser();
+  if (!data.amount || data.amount <= 0) throw new Error("Enter a valid amount.");
+  await supabase
+    .from("expenses")
+    .update({
+      amount: data.amount,
+      category: data.category.trim() || "Other",
+      description: data.description?.trim() || null,
+      occurred_on: data.occurred_on,
+    })
+    .eq("id", id);
+  revalidateAll();
+}
+
+export async function updateIncome(
+  id: string,
+  data: { amount: number; source_name: string; description: string | null; occurred_on: string },
+) {
+  const { supabase } = await requireUser();
+  if (!data.amount || data.amount <= 0) throw new Error("Enter a valid amount.");
+  await supabase
+    .from("income")
+    .update({
+      amount: data.amount,
+      source_name: data.source_name.trim() || "Other",
+      description: data.description?.trim() || null,
+      occurred_on: data.occurred_on,
+    })
+    .eq("id", id);
+  revalidateAll();
+}
+
 export type ImportRow = {
   occurred_on: string | null;
   category: string;
