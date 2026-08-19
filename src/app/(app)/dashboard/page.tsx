@@ -8,6 +8,7 @@ import ExportButton from "@/components/ExportButton";
 import ImportCsv from "@/components/ImportCsv";
 import PinSettings from "@/components/PinSettings";
 import NotificationToggle from "@/components/NotificationToggle";
+import RecurringRules, { type RuleRow } from "@/components/RecurringRules";
 import SpendingDonut, { type Slice } from "@/components/SpendingDonut";
 import TrendChart, { type MonthPoint } from "@/components/TrendChart";
 import { naira } from "@/components/Naira";
@@ -82,6 +83,7 @@ export default async function Dashboard() {
     { data: goalRows },
     { data: expTrend },
     { data: incTrend },
+    { data: ruleRows },
   ] = await Promise.all([
       supabase
         .from("expenses")
@@ -107,6 +109,10 @@ export default async function Dashboard() {
         .from("income")
         .select("amount,occurred_on")
         .gte("occurred_on", trendStart),
+      supabase
+        .from("recurring_rules")
+        .select("id,kind,amount,category,frequency,next_run")
+        .order("next_run", { ascending: true }),
     ]);
 
   const expenses = (exp as ExpenseRow[]) ?? [];
@@ -160,6 +166,11 @@ export default async function Dashboard() {
     label: b.label,
     income: b.income,
     expense: b.expense,
+  }));
+
+  const rules: RuleRow[] = ((ruleRows as RuleRow[]) ?? []).map((r) => ({
+    ...r,
+    amount: Number(r.amount),
   }));
 
   return (
@@ -237,6 +248,8 @@ export default async function Dashboard() {
         <Budgets budgets={budgets} />
         <SavingsGoals goals={goals} />
       </div>
+
+      <RecurringRules rules={rules} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <ExportButton />

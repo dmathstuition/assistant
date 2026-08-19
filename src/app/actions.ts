@@ -221,6 +221,38 @@ export async function saveAssistantAction(action: AssistantAction) {
   revalidatePath("/dashboard");
 }
 
+// ---- Recurring rules (auto-logged transactions like rent/salary) ----
+
+export async function addRecurringRule(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const kind = formData.get("kind") === "income" ? "income" : "expense";
+  const amount = Number(formData.get("amount"));
+  if (!amount || amount <= 0) throw new Error("Enter a valid amount.");
+  const category = String(formData.get("category") || "Other").trim() || "Other";
+  const freqRaw = String(formData.get("frequency") || "monthly");
+  const frequency = ["daily", "weekly", "monthly"].includes(freqRaw)
+    ? freqRaw
+    : "monthly";
+  const next_run =
+    String(formData.get("next_run") || "") ||
+    new Date().toISOString().slice(0, 10);
+  await supabase.from("recurring_rules").insert({
+    user_id: user.id,
+    kind,
+    amount,
+    category,
+    frequency,
+    next_run,
+  });
+  revalidatePath("/dashboard");
+}
+
+export async function deleteRecurringRule(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("recurring_rules").delete().eq("id", id);
+  revalidatePath("/dashboard");
+}
+
 // ---- Edit / delete (RLS scopes every mutation to the caller's own rows) ----
 
 function revalidateAll() {

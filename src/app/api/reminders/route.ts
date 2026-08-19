@@ -119,7 +119,15 @@ export async function GET(req: Request) {
 
     if (delivered) {
       sent++;
-      if (!r.recurring) doneIds.push(r.id);
+      if (r.recurring) {
+        // Roll a recurring reminder forward to its next occurrence.
+        await db
+          .from("reminders")
+          .update({ remind_at: advanceReminder(r.remind_at, r.recurring) })
+          .eq("id", r.id);
+      } else {
+        doneIds.push(r.id);
+      }
     }
   }
 
@@ -131,6 +139,17 @@ export async function GET(req: Request) {
   }
 
   return NextResponse.json({ ok: true, due: due.length, sent });
+}
+
+// Advance a recurring reminder's timestamp to its next occurrence.
+function advanceReminder(remindAt: string, recurring: string): string {
+  const d = new Date(remindAt);
+  const freq = recurring.toLowerCase();
+  if (freq.includes("day")) d.setUTCDate(d.getUTCDate() + 1);
+  else if (freq.includes("week")) d.setUTCDate(d.getUTCDate() + 7);
+  else if (freq.includes("year")) d.setUTCFullYear(d.getUTCFullYear() + 1);
+  else d.setUTCMonth(d.getUTCMonth() + 1); // default monthly
+  return d.toISOString();
 }
 
 // Reminder titles are user-supplied; escape before dropping into the email HTML.
