@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import CommandBox from "@/components/CommandBox";
 import QuickAdd from "@/components/QuickAdd";
 import TaskItem from "@/components/TaskItem";
+import Budgets, { type BudgetRow } from "@/components/Budgets";
 import { naira } from "@/components/Naira";
 
 export const dynamic = "force-dynamic";
@@ -19,6 +20,8 @@ function greeting() {
 }
 
 type Row = { amount: number };
+type ExpenseRow = { amount: number; category: string | null };
+type Budget = { category: string; monthly_limit: number };
 type Task = {
   id: string;
   title: string;
@@ -31,21 +34,39 @@ export default async function Dashboard() {
   const supabase = await createClient();
   const start = monthStart();
 
-  const [{ data: exp }, { data: inc }, { data: tasks }] = await Promise.all([
-    supabase.from("expenses").select("amount").gte("occurred_on", start),
-    supabase.from("income").select("amount").gte("occurred_on", start),
-    supabase
-      .from("tasks")
-      .select("id,title,status,due_date,priority")
-      .neq("status", "completed")
-      .order("created_at", { ascending: false })
-      .limit(8),
-  ]);
+  const [{ data: exp }, { data: inc }, { data: tasks }, { data: budgetRows }] =
+    await Promise.all([
+      supabase
+        .from("expenses")
+        .select("amount,category")
+        .gte("occurred_on", start),
+      supabase.from("income").select("amount").gte("occurred_on", start),
+      supabase
+        .from("tasks")
+        .select("id,title,status,due_date,priority")
+        .neq("status", "completed")
+        .order("created_at", { ascending: false })
+        .limit(8),
+      supabase.from("budgets").select("category,monthly_limit"),
+    ]);
 
-  const totalExp = ((exp as Row[]) ?? []).reduce((s, r) => s + Number(r.amount), 0);
+  const expenses = (exp as ExpenseRow[]) ?? [];
+  const totalExp = expenses.reduce((s, r) => s + Number(r.amount), 0);
   const totalInc = ((inc as Row[]) ?? []).reduce((s, r) => s + Number(r.amount), 0);
   const net = totalInc - totalExp;
   const taskList = (tasks as Task[]) ?? [];
+
+  // Spent-this-month per category, keyed case-insensitively to match budgets.
+  const spentByCategory = new Map<string, number>();
+  for (const e of expenses) {
+    const key = (e.category ?? "Other").toLowerCase();
+    spentByCategory.set(key, (spentByCategory.get(key) ?? 0) + Number(e.amount));
+  }
+  const budgets: BudgetRow[] = ((budgetRows as Budget[]) ?? []).map((b) => ({
+    category: b.category,
+    monthly_limit: Number(b.monthly_limit),
+    spent: spentByCategory.get(b.category.toLowerCase()) ?? 0,
+  }));
 
   return (
     <div className="space-y-6">
@@ -94,6 +115,8 @@ export default async function Dashboard() {
           )}
         </div>
       </div>
+
+      <Budgets budgets={budgets} />
     </div>
   );
 }
