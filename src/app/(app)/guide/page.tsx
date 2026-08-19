@@ -9,7 +9,9 @@ import {
   RepeatIcon,
 } from "@/components/icons";
 
-export const dynamic = "force-static";
+// Rendered within the authenticated (cookie-reading) app layout, so it can't be
+// statically exported — keep it dynamic like the other app pages.
+export const dynamic = "force-dynamic";
 
 type Section = {
   Icon: (p: { className?: string }) => React.ReactNode;
