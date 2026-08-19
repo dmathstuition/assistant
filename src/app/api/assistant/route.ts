@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 
-// Current, stable production model. See the current list at:
-// https://docs.claude.com/en/docs/about-claude/models
-// (Switch to "claude-haiku-4-5" to cut cost for this simple parsing task.)
-const MODEL = "claude-sonnet-4-6";
+// DeepSeek is OpenAI-compatible. Model options: "deepseek-chat" or "deepseek-reasoner".
+const MODEL = "deepseek-chat";
 
 const SYSTEM = `You turn a user's message into ONE structured action for a personal finance & task assistant.
 Return ONLY a JSON object — no markdown, no commentary. Use exactly this shape:
@@ -25,10 +23,10 @@ Rules:
 - If unsure, use intent "unknown".`;
 
 export async function POST(req: Request) {
-  const key = process.env.ANTHROPIC_API_KEY;
+  const key = process.env.DEEPSEEK_API_KEY;
   if (!key) {
     return NextResponse.json(
-      { error: "AI is not configured. Add ANTHROPIC_API_KEY in Vercel." },
+      { error: "AI is not configured. Add DEEPSEEK_API_KEY in Vercel." },
       { status: 500 },
     );
   }
@@ -44,18 +42,20 @@ export async function POST(req: Request) {
   }
 
   try {
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
+    const r = await fetch("https://api.deepseek.com/chat/completions", {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-api-key": key,
-        "anthropic-version": "2023-06-01",
+        authorization: `Bearer ${key}`,
       },
       body: JSON.stringify({
         model: MODEL,
         max_tokens: 400,
-        system: SYSTEM,
-        messages: [{ role: "user", content: message }],
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: SYSTEM },
+          { role: "user", content: message },
+        ],
       }),
     });
 
@@ -68,12 +68,9 @@ export async function POST(req: Request) {
     }
 
     const data = (await r.json()) as {
-      content?: Array<{ type: string; text?: string }>;
+      choices?: Array<{ message?: { content?: string } }>;
     };
-    const text = (data.content ?? [])
-      .filter((b) => b.type === "text")
-      .map((b) => b.text ?? "")
-      .join("");
+    const text = data.choices?.[0]?.message?.content ?? "";
 
     let action: unknown;
     try {
