@@ -350,13 +350,13 @@ export async function addAlertRule(formData: FormData) {
 
   if (type === "spend_threshold") {
     const windowRaw = String(formData.get("window") || "week");
-    const window = ["day", "week", "month"].includes(windowRaw) ? windowRaw : "week";
+    const time_window = ["day", "week", "month"].includes(windowRaw) ? windowRaw : "week";
     const category = String(formData.get("category") || "").trim() || null;
     await supabase.from("alert_rules").insert({
       user_id: user.id,
       type,
       category,
-      window,
+      time_window,
       threshold,
     });
   } else if (type === "balance_below") {

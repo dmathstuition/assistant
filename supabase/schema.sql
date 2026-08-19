@@ -306,7 +306,7 @@ create table if not exists public.alert_rules (
   user_id uuid not null references auth.users(id) on delete cascade,
   type text not null check (type in ('spend_threshold','balance_below')),
   category text,                                   -- spend_threshold, null = all
-  window text check (window in ('day','week','month')),
+  time_window text check (time_window in ('day','week','month')),
   threshold numeric(14,2) not null check (threshold >= 0),
   active boolean not null default true,
   last_notified_period text,
