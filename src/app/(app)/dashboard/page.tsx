@@ -3,6 +3,7 @@ import CommandBox from "@/components/CommandBox";
 import QuickAdd from "@/components/QuickAdd";
 import TaskItem from "@/components/TaskItem";
 import Budgets, { type BudgetRow } from "@/components/Budgets";
+import SavingsGoals, { type GoalRow } from "@/components/SavingsGoals";
 import { naira } from "@/components/Naira";
 
 export const dynamic = "force-dynamic";
@@ -34,8 +35,13 @@ export default async function Dashboard() {
   const supabase = await createClient();
   const start = monthStart();
 
-  const [{ data: exp }, { data: inc }, { data: tasks }, { data: budgetRows }] =
-    await Promise.all([
+  const [
+    { data: exp },
+    { data: inc },
+    { data: tasks },
+    { data: budgetRows },
+    { data: goalRows },
+  ] = await Promise.all([
       supabase
         .from("expenses")
         .select("amount,category")
@@ -48,6 +54,10 @@ export default async function Dashboard() {
         .order("created_at", { ascending: false })
         .limit(8),
       supabase.from("budgets").select("category,monthly_limit"),
+      supabase
+        .from("savings_goals")
+        .select("id,name,target_amount,current_amount,deadline")
+        .order("created_at", { ascending: false }),
     ]);
 
   const expenses = (exp as ExpenseRow[]) ?? [];
@@ -66,6 +76,12 @@ export default async function Dashboard() {
     category: b.category,
     monthly_limit: Number(b.monthly_limit),
     spent: spentByCategory.get(b.category.toLowerCase()) ?? 0,
+  }));
+
+  const goals: GoalRow[] = ((goalRows as GoalRow[]) ?? []).map((g) => ({
+    ...g,
+    target_amount: Number(g.target_amount),
+    current_amount: Number(g.current_amount),
   }));
 
   return (
@@ -116,7 +132,10 @@ export default async function Dashboard() {
         </div>
       </div>
 
-      <Budgets budgets={budgets} />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Budgets budgets={budgets} />
+        <SavingsGoals goals={goals} />
+      </div>
     </div>
   );
 }

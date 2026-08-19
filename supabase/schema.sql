@@ -149,3 +149,26 @@ alter table public.budgets enable row level security;
 
 drop policy if exists "own budgets" on public.budgets;
 create policy "own budgets" on public.budgets for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- =====================================================================
+--  MIGRATION: SAVINGS GOALS (added after Phase 1)
+--  Paste this block on its own into Supabase → SQL Editor → Run.
+--  A named savings target per user, with the amount saved so far. RLS
+--  matches the other data tables so a user only sees/edits their own rows.
+-- =====================================================================
+create table if not exists public.savings_goals (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  target_amount numeric(14,2) not null check (target_amount >= 0),
+  current_amount numeric(14,2) not null default 0 check (current_amount >= 0),
+  deadline date,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_savings_goals_user on public.savings_goals(user_id);
+
+alter table public.savings_goals enable row level security;
+
+drop policy if exists "own savings_goals" on public.savings_goals;
+create policy "own savings_goals" on public.savings_goals for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

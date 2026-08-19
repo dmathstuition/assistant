@@ -84,6 +84,41 @@ export async function upsertBudget(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
+export async function addSavingsGoal(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const name = String(formData.get("name") || "").trim();
+  if (!name) throw new Error("Enter a goal name.");
+  const target_amount = Number(formData.get("target_amount"));
+  if (!target_amount || target_amount <= 0)
+    throw new Error("Enter a valid target amount.");
+  const deadline = String(formData.get("deadline") || "");
+  await supabase.from("savings_goals").insert({
+    user_id: user.id,
+    name,
+    target_amount,
+    deadline: deadline || null,
+  });
+  revalidatePath("/dashboard");
+}
+
+export async function logContribution(id: string, amount: number) {
+  const { supabase } = await requireUser();
+  if (!amount || amount <= 0) throw new Error("Enter a valid amount.");
+  // Read-then-write: RLS scopes the select to the caller's own row, so a goal
+  // that isn't theirs simply returns nothing and the update below is a no-op.
+  const { data: goal } = await supabase
+    .from("savings_goals")
+    .select("current_amount")
+    .eq("id", id)
+    .single();
+  if (!goal) throw new Error("Goal not found.");
+  await supabase
+    .from("savings_goals")
+    .update({ current_amount: Number(goal.current_amount) + amount })
+    .eq("id", id);
+  revalidatePath("/dashboard");
+}
+
 type AssistantAction = {
   intent: string;
   amount?: number | null;
