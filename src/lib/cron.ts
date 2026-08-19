@@ -9,8 +9,13 @@ export function authorizeCron(
   req: Request,
 ): { db: SupabaseClient } | { error: NextResponse } {
   const secret = process.env.CRON_SECRET;
+  // Accept the secret via the Authorization bearer header (Vercel Cron) OR a
+  // ?key= query param (so a free external scheduler like an Apps Script trigger
+  // or cron-job.org can drive per-minute endpoints without custom headers).
   const auth = req.headers.get("authorization");
-  if (!secret || auth !== `Bearer ${secret}`) {
+  const key = new URL(req.url).searchParams.get("key");
+  const authorized = Boolean(secret) && (auth === `Bearer ${secret}` || key === secret);
+  if (!authorized) {
     return {
       error: NextResponse.json({ ok: false, reason: "unauthorized" }, { status: 401 }),
     };

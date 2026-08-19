@@ -38,6 +38,25 @@ The web app URL is public, so the script authenticates **every** request against
 client — it lives only in the Apps Script and in Vercel server env vars. Nothing
 in the browser ever sees it.
 
+## Task alarms even when the app is closed (free)
+
+The in-app alarms only fire while the app is open. To get a notification on your
+phone at a task's time (and 10 minutes before) even when D-Maths isn't running,
+let this script poke the alarm endpoint on a schedule:
+
+1. First set up **web push** (VAPID keys + `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, see the
+   app's env) and enable notifications once from the dashboard.
+2. In `Code.gs`, set `ALARM_URL` to
+   `https://YOUR-APP.vercel.app/api/alarms/push?key=YOUR_CRON_SECRET`.
+3. Apps Script editor → **Triggers** (clock icon) → **Add Trigger**:
+   - Function: `runAlarms`
+   - Event source: **Time-driven → Minutes timer → Every 5 minutes**
+
+The endpoint de-duplicates, so each warning/alarm is sent once. Wall-clock task
+times are read in West Africa Time by default; override with the app env var
+`ALARM_TZ_OFFSET` (minutes east of UTC). A free service like cron-job.org hitting
+the same URL every minute works too.
+
 ## Notes
 
 - Reminder and budget-alert emails, and the monthly summary email, all send from
