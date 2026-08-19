@@ -266,3 +266,17 @@ alter table public.task_alerts enable row level security;
 
 drop policy if exists "own task_alerts" on public.task_alerts;
 create policy "own task_alerts" on public.task_alerts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- =====================================================================
+--  MIGRATION: TASK FIELDS (added after Phase 1)
+--  Paste this block on its own into Supabase → SQL Editor → Run.
+--  Adds recurrence, a per-task reminder lead time, and free-text notes to
+--  the existing tasks table (which already has status/priority/category).
+-- =====================================================================
+alter table public.tasks
+  add column if not exists recurrence text
+    check (recurrence in ('daily','weekly','monthly'));
+alter table public.tasks
+  add column if not exists reminder_minutes int;
+alter table public.tasks
+  add column if not exists notes text;
