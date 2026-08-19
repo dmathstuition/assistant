@@ -64,8 +64,8 @@ function greeting() {
   return "Good evening";
 }
 
-type Row = { amount: number };
-type ExpenseRow = { amount: number; category: string | null };
+type ExpenseRow = { amount: number; category: string | null; occurred_on: string };
+type IncomeMonthRow = { amount: number; occurred_on: string; source_name: string | null };
 type DatedRow = { amount: number; occurred_on: string };
 type Budget = { id: string; category: string; monthly_limit: number };
 
@@ -93,9 +93,12 @@ export default async function Dashboard() {
   ] = await Promise.all([
       supabase
         .from("expenses")
-        .select("amount,category")
+        .select("amount,category,occurred_on")
         .gte("occurred_on", start),
-      supabase.from("income").select("amount").gte("occurred_on", start),
+      supabase
+        .from("income")
+        .select("amount,occurred_on,source_name")
+        .gte("occurred_on", start),
       supabase
         .from("tasks")
         .select(TASK_SELECT)
@@ -136,9 +139,27 @@ export default async function Dashboard() {
     ]);
 
   const expenses = (exp as ExpenseRow[]) ?? [];
+  const incomeRows = (inc as IncomeMonthRow[]) ?? [];
   const totalExp = expenses.reduce((s, r) => s + Number(r.amount), 0);
-  const totalInc = ((inc as Row[]) ?? []).reduce((s, r) => s + Number(r.amount), 0);
+  const totalInc = incomeRows.reduce((s, r) => s + Number(r.amount), 0);
   const net = totalInc - totalExp;
+
+  const todaySpent = expenses
+    .filter((r) => r.occurred_on === today)
+    .reduce((s, r) => s + Number(r.amount), 0);
+  const todayIncome = incomeRows
+    .filter((r) => r.occurred_on === today)
+    .reduce((s, r) => s + Number(r.amount), 0);
+
+  // Autocomplete values from this month's own entries.
+  const pastCategories = [
+    ...new Set(expenses.map((e) => e.category).filter((c): c is string => Boolean(c))),
+  ];
+  const pastSources = [
+    ...new Set(
+      incomeRows.map((i) => i.source_name).filter((s): s is string => Boolean(s)),
+    ),
+  ];
 
   const todayTasks = (todayRows as FullTask[]) ?? [];
   const overdueTasks = (overdueRows as FullTask[]) ?? [];
@@ -176,6 +197,16 @@ export default async function Dashboard() {
       pct: Math.round((b.spent / b.monthly_limit) * 100),
       over: b.spent > b.monthly_limit,
     }));
+
+  // The budget under most pressure, for the daily brief.
+  const topBudget = budgets
+    .filter((b) => b.monthly_limit > 0)
+    .map((b) => ({
+      category: b.category,
+      remaining: b.monthly_limit - b.spent,
+      pct: b.spent / b.monthly_limit,
+    }))
+    .sort((a, b) => b.pct - a.pct)[0];
 
   // Donut slices: this-month spend per category, keeping first-seen casing.
   const sliceMap = new Map<string, Slice>();
@@ -222,6 +253,38 @@ export default async function Dashboard() {
             year: "numeric",
           })}
         </p>
+      </div>
+
+      {/* Daily brief */}
+      <div className="card p-4 text-sm">
+        <span className="text-brand-muted">Here&apos;s your day — </span>
+        <b>{todayTasks.length}</b>
+        <span className="text-brand-muted">
+          {" "}
+          task{todayTasks.length === 1 ? "" : "s"} due
+        </span>
+        {overdueTasks.length > 0 && (
+          <span className="text-red-400"> ({overdueTasks.length} overdue)</span>
+        )}
+        <span className="text-brand-muted"> · spent </span>
+        <b className="text-brand-accent">{naira(todaySpent)}</b>
+        <span className="text-brand-muted"> today</span>
+        {todayIncome > 0 && (
+          <>
+            <span className="text-brand-muted"> · earned </span>
+            <b className="text-green-400">{naira(todayIncome)}</b>
+          </>
+        )}
+        {topBudget && (
+          <>
+            <span className="text-brand-muted"> · {topBudget.category}: </span>
+            <b className={topBudget.remaining < 0 ? "text-red-400" : "text-green-400"}>
+              {topBudget.remaining < 0
+                ? `${naira(-topBudget.remaining)} over`
+                : `${naira(topBudget.remaining)} left`}
+            </b>
+          </>
+        )}
       </div>
 
       {/* Quick actions */}
@@ -378,7 +441,7 @@ export default async function Dashboard() {
         <TrendChart months={trend} />
       </div>
 
-      <QuickAdd />
+      <QuickAdd categories={pastCategories} sources={pastSources} />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Budgets budgets={budgets} />
