@@ -10,7 +10,13 @@ export type MonthPoint = { label: string; income: number; expense: number };
 const INCOME = "#199e70";
 const EXPENSE = "#d95926";
 
-export default function TrendChart({ months }: { months: MonthPoint[] }) {
+export default function TrendChart({
+  months,
+  title,
+}: {
+  months: MonthPoint[];
+  title?: string;
+}) {
   const max = Math.max(1, ...months.map((m) => Math.max(m.income, m.expense)));
   const anyData = months.some((m) => m.income > 0 || m.expense > 0);
 
@@ -26,7 +32,7 @@ export default function TrendChart({ months }: { months: MonthPoint[] }) {
     <div className="card p-5">
       <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-brand-muted">
         <TrendingUpIcon className="text-base text-brand-accent" />
-        Income vs expenses · last {months.length} months
+        {title ?? `Income vs expenses · last ${months.length} months`}
       </div>
 
       <div className="mb-3 flex gap-4 text-xs text-brand-muted">
