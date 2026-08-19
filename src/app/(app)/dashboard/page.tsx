@@ -6,6 +6,7 @@ import Budgets, { type BudgetRow } from "@/components/Budgets";
 import SavingsGoals, { type GoalRow } from "@/components/SavingsGoals";
 import ExportButton from "@/components/ExportButton";
 import ImportCsv from "@/components/ImportCsv";
+import PinSettings from "@/components/PinSettings";
 import SpendingDonut, { type Slice } from "@/components/SpendingDonut";
 import TrendChart, { type MonthPoint } from "@/components/TrendChart";
 import { naira } from "@/components/Naira";
@@ -214,6 +215,8 @@ export default async function Dashboard() {
         <ExportButton />
         <ImportCsv />
       </div>
+
+      <PinSettings />
     </div>
   );
 }

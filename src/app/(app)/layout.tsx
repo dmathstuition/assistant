@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import SignOutButton from "@/components/SignOutButton";
+import AppLock from "@/components/AppLock";
 
 export default async function AppLayout({
   children,
@@ -14,8 +15,9 @@ export default async function AppLayout({
   if (!user) redirect("/login");
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b border-brand-border">
+    <AppLock>
+      <div className="min-h-screen">
+        <header className="border-b border-brand-border">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <div className="font-bold">
             D-Maths <span className="text-brand-accent">Assistant</span>
@@ -27,8 +29,9 @@ export default async function AppLayout({
             <SignOutButton />
           </div>
         </div>
-      </header>
-      <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
-    </div>
+        </header>
+        <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
+      </div>
+    </AppLock>
   );
 }
