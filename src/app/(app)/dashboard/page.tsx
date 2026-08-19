@@ -5,6 +5,7 @@ import TaskItem from "@/components/TaskItem";
 import Budgets, { type BudgetRow } from "@/components/Budgets";
 import SavingsGoals, { type GoalRow } from "@/components/SavingsGoals";
 import ExportButton from "@/components/ExportButton";
+import ImportCsv from "@/components/ImportCsv";
 import SpendingDonut, { type Slice } from "@/components/SpendingDonut";
 import TrendChart, { type MonthPoint } from "@/components/TrendChart";
 import { naira } from "@/components/Naira";
@@ -209,7 +210,10 @@ export default async function Dashboard() {
         <SavingsGoals goals={goals} />
       </div>
 
-      <ExportButton />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <ExportButton />
+        <ImportCsv />
+      </div>
     </div>
   );
 }

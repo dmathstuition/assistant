@@ -219,6 +219,34 @@ export async function saveAssistantAction(action: AssistantAction) {
   revalidatePath("/dashboard");
 }
 
+export type ImportRow = {
+  occurred_on: string | null;
+  category: string;
+  amount: number;
+  description: string | null;
+};
+
+// Bulk-insert expenses parsed from a CSV. Rows are validated here; anything
+// without a positive amount is skipped. Returns how many were inserted.
+export async function importExpenses(rows: ImportRow[]): Promise<number> {
+  const { supabase, user } = await requireUser();
+  const clean = rows
+    .filter((r) => Number(r.amount) > 0)
+    .map((r) => ({
+      user_id: user.id,
+      amount: Number(r.amount),
+      category: (r.category || "Other").trim() || "Other",
+      description: r.description?.trim() || null,
+      occurred_on: r.occurred_on || undefined, // let the DB default to today if absent
+      source: "manual" as const,
+    }));
+  if (clean.length === 0) throw new Error("No valid rows found in that file.");
+  const { error } = await supabase.from("expenses").insert(clean);
+  if (error) throw new Error(error.message);
+  revalidatePath("/dashboard");
+  return clean.length;
+}
+
 // Push the full expense + income history into a brand-new Google Sheet via the
 // Apps Script bridge, and return its URL. RLS scopes both reads to the caller.
 export async function exportToGoogleSheet(): Promise<string> {
