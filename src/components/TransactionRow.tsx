@@ -8,6 +8,7 @@ import {
   deleteIncome,
 } from "@/app/actions";
 import { naira } from "@/components/Naira";
+import { useToast } from "@/components/ToastProvider";
 import { PencilIcon, TrashIcon, WalletIcon, IncomeIcon } from "@/components/icons";
 
 export type Txn = {
@@ -30,6 +31,7 @@ export default function TransactionRow({ txn }: { txn: Txn }) {
   const [label, setLabel] = useState(txn.label);
   const [date, setDate] = useState(txn.date);
   const [description, setDescription] = useState(txn.description ?? "");
+  const { undo } = useToast();
 
   if (gone) return null;
 
@@ -62,16 +64,13 @@ export default function TransactionRow({ txn }: { txn: Txn }) {
     setBusy(false);
   }
 
-  async function remove() {
-    if (!confirm("Delete this transaction?")) return;
-    setBusy(true);
+  function remove() {
     setGone(true);
-    try {
-      await (isExpense ? deleteExpense(txn.id) : deleteIncome(txn.id));
-    } catch {
-      setGone(false);
-    }
-    setBusy(false);
+    undo(
+      "Transaction deleted",
+      () => (isExpense ? deleteExpense(txn.id) : deleteIncome(txn.id)),
+      () => setGone(false),
+    );
   }
 
   if (editing) {

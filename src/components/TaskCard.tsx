@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { setTaskStatus, deleteTask } from "@/app/actions";
+import { useToast } from "@/components/ToastProvider";
 import TaskForm, { type TaskInit } from "@/components/TaskForm";
 import { PencilIcon, TrashIcon, RepeatIcon, ClockIcon } from "@/components/icons";
 
@@ -48,6 +49,7 @@ export default function TaskCard({ task }: { task: FullTask }) {
   const [editing, setEditing] = useState(false);
   const [gone, setGone] = useState(false);
   const [busy, setBusy] = useState(false);
+  const { undo } = useToast();
 
   if (gone) return null;
 
@@ -74,16 +76,13 @@ export default function TaskCard({ task }: { task: FullTask }) {
     setBusy(false);
   }
 
-  async function remove() {
-    if (!confirm("Delete this task?")) return;
-    setBusy(true);
-    setGone(true);
-    try {
-      await deleteTask(task.id);
-    } catch {
-      setGone(false);
-    }
-    setBusy(false);
+  function remove() {
+    setGone(true); // optimistic; committed after the undo window
+    undo(
+      "Task deleted",
+      () => deleteTask(task.id),
+      () => setGone(false),
+    );
   }
 
   if (editing) {
