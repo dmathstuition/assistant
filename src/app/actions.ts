@@ -241,6 +241,22 @@ type AssistantAction = {
   due_date?: string | null;
 };
 
+// Save several parsed actions at once (the assistant can log multiple items
+// from one sentence). Best-effort: skips any that error so the rest still save.
+export async function saveAssistantActions(actions: AssistantAction[]) {
+  let saved = 0;
+  for (const a of actions) {
+    try {
+      await saveAssistantAction(a);
+      saved++;
+    } catch {
+      /* skip the ones with nothing to save */
+    }
+  }
+  if (saved === 0) throw new Error("Nothing to save for this request.");
+  return saved;
+}
+
 export async function saveAssistantAction(action: AssistantAction) {
   const { supabase, user } = await requireUser();
 

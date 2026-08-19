@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { deleteIncome } from "@/app/actions";
 import IncomeForm, { type IncomeInit } from "@/components/IncomeForm";
+import { useToast } from "@/components/ToastProvider";
 import { naira } from "@/components/Naira";
 import { IncomeIcon, PencilIcon, TrashIcon } from "@/components/icons";
 
@@ -20,20 +21,17 @@ export type IncomeEntry = {
 export default function IncomeRow({ entry }: { entry: IncomeEntry }) {
   const [editing, setEditing] = useState(false);
   const [gone, setGone] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const { undo } = useToast();
 
   if (gone) return null;
 
-  async function remove() {
-    if (!confirm("Delete this income entry?")) return;
-    setBusy(true);
+  function remove() {
     setGone(true);
-    try {
-      await deleteIncome(entry.id);
-    } catch {
-      setGone(false);
-    }
-    setBusy(false);
+    undo(
+      "Income deleted",
+      () => deleteIncome(entry.id),
+      () => setGone(false),
+    );
   }
 
   if (editing) {
@@ -76,7 +74,7 @@ export default function IncomeRow({ entry }: { entry: IncomeEntry }) {
         <button onClick={() => setEditing(true)} title="Edit" className="p-1 text-brand-muted hover:text-white">
           <PencilIcon className="text-sm" />
         </button>
-        <button onClick={remove} disabled={busy} title="Delete" className="p-1 text-brand-muted hover:text-red-400">
+        <button onClick={remove} title="Delete" className="p-1 text-brand-muted hover:text-red-400">
           <TrashIcon className="text-sm" />
         </button>
       </div>

@@ -5,6 +5,7 @@ import SignOutButton from "@/components/SignOutButton";
 import AppLock from "@/components/AppLock";
 import InstallButton from "@/components/InstallButton";
 import TaskAlarms from "@/components/TaskAlarms";
+import ToastProvider from "@/components/ToastProvider";
 import {
   WalletIcon,
   ChecklistIcon,
@@ -39,6 +40,7 @@ export default async function AppLayout({
 
   return (
     <AppLock>
+      <ToastProvider>
       <div className="min-h-screen pb-20 sm:pb-0">
         <header className="sticky top-0 z-20 border-b border-white/10 bg-[rgba(8,14,26,0.6)] backdrop-blur-xl">
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
@@ -92,6 +94,7 @@ export default async function AppLayout({
 
         <TaskAlarms />
       </div>
+      </ToastProvider>
     </AppLock>
   );
 }
