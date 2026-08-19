@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { saveAssistantAction } from "@/app/actions";
+import { saveAssistantActions } from "@/app/actions";
 import { naira } from "@/components/Naira";
 import { SparklesIcon } from "@/components/icons";
 
@@ -24,7 +24,7 @@ const SUGGESTIONS = [
 export default function CommandBox() {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
-  const [action, setAction] = useState<Action | null>(null);
+  const [actions, setActions] = useState<Action[]>([]);
   const [msg, setMsg] = useState("");
 
   async function ask(q?: string) {
@@ -32,7 +32,7 @@ export default function CommandBox() {
     if (!question) return;
     setBusy(true);
     setMsg("");
-    setAction(null);
+    setActions([]);
     try {
       const r = await fetch("/api/assistant", {
         method: "POST",
@@ -41,14 +41,15 @@ export default function CommandBox() {
       });
       const d = await r.json();
       if (d.error) setMsg(d.error);
-      else if (d.action?.intent === "query")
-        setMsg(
-          d.answer?.text ??
-            "I couldn't work out an answer for that question.",
+      else if (d.answer)
+        setMsg(d.answer.text ?? "I couldn't work out an answer for that.");
+      else {
+        const list = ((d.actions as Action[]) ?? []).filter(
+          (a) => a.intent && a.intent !== "unknown",
         );
-      else if (!d.action || d.action.intent === "unknown")
-        setMsg("I couldn't understand that. Try rephrasing.");
-      else setAction(d.action as Action);
+        if (list.length === 0) setMsg("I couldn't understand that. Try rephrasing.");
+        else setActions(list);
+      }
     } catch {
       setMsg("Something went wrong reaching the assistant.");
     }
@@ -56,12 +57,12 @@ export default function CommandBox() {
   }
 
   async function confirm() {
-    if (!action) return;
+    if (actions.length === 0) return;
     setBusy(true);
     try {
-      await saveAssistantAction(action);
-      setMsg("Saved \u2713");
-      setAction(null);
+      const n = await saveAssistantActions(actions);
+      setMsg(`Saved ${n} item${n === 1 ? "" : "s"} \u2713`);
+      setActions([]);
       setText("");
     } catch (e: unknown) {
       setMsg(e instanceof Error ? e.message : "Could not save.");
@@ -135,28 +136,37 @@ export default function CommandBox() {
         ))}
       </div>
 
-      {action && (
+      {actions.length > 0 && (
         <div className="mt-4 rounded-lg border border-brand-accent/40 bg-brand-bg p-4">
           <div className="text-sm">
-            I understood a <b className="text-brand-accent">{action.intent}</b>:
-            <ul className="mt-2 space-y-1 text-brand-muted">
-              {action.amount ? <li>Amount: {naira(action.amount)}</li> : null}
-              {action.category ? <li>Category: {action.category}</li> : null}
-              {action.title ? <li>Title: {action.title}</li> : null}
-              {action.due_date ? <li>Date: {action.due_date}</li> : null}
+            {actions.length === 1 ? (
+              <>I understood a <b className="text-brand-accent">{actions[0].intent}</b>:</>
+            ) : (
+              <>I understood <b className="text-brand-accent">{actions.length} items</b>:</>
+            )}
+            <ul className="mt-2 space-y-2 text-brand-muted">
+              {actions.map((a, i) => (
+                <li key={i} className="border-l-2 border-brand-border pl-2">
+                  <span className="text-brand-accent">{a.intent}</span>
+                  {a.amount ? ` · ${naira(a.amount)}` : ""}
+                  {a.category ? ` · ${a.category}` : ""}
+                  {a.title ? ` · ${a.title}` : ""}
+                  {a.due_date ? ` · ${a.due_date}` : ""}
+                </li>
+              ))}
             </ul>
           </div>
           <div className="mt-3 flex gap-2">
             <button
               onClick={confirm}
               disabled={busy}
-              className="rounded-lg bg-brand-accent px-4 py-1.5 text-sm font-semibold text-white"
+              className="btn-accent rounded-lg px-4 py-1.5 text-sm font-semibold text-white"
             >
-              Save
+              {actions.length === 1 ? "Save" : `Save all ${actions.length}`}
             </button>
             <button
-              onClick={() => setAction(null)}
-              className="rounded-lg border border-brand-border px-4 py-1.5 text-sm"
+              onClick={() => setActions([])}
+              className="btn-ghost rounded-lg px-4 py-1.5 text-sm"
             >
               Cancel
             </button>

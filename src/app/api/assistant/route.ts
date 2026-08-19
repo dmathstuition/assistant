@@ -5,8 +5,10 @@ import { naira } from "@/components/Naira";
 // DeepSeek is OpenAI-compatible. Model options: "deepseek-chat" or "deepseek-reasoner".
 const MODEL = "deepseek-chat";
 
-const SYSTEM = `You turn a user's message into ONE structured action for a personal finance & task assistant.
-Return ONLY a JSON object — no markdown, no commentary. Use exactly this shape:
+const SYSTEM = `You turn a user's message into one or MORE structured actions for a personal finance & task assistant.
+Return ONLY a JSON object — no markdown, no commentary — of this shape:
+{ "actions": [ ACTION, ... ] }
+Each ACTION uses exactly this shape:
 {
   "intent": "expense" | "income" | "task" | "reminder" | "query" | "budget" | "goal" | "unknown",
   "amount": number | null,
@@ -15,27 +17,29 @@ Return ONLY a JSON object — no markdown, no commentary. Use exactly this shape
   "description": string | null,
   "due_date": string | null,
   "period": "today" | "this_week" | "last_week" | "this_month" | "last_month" | null,
-  "query_metric": "spend" | "income" | "budget_status" | null,
+  "query_metric": "spend" | "income" | "budget_status" | "balance" | "summary_today" | null,
   "confidence": number
 }
 Rules:
+- Usually "actions" has ONE item. If the message clearly states MULTIPLE separate
+  entries ("I spent 2,000 on lunch and 500 on transport"), return one action per
+  item.
 - Never invent an amount. Only fill "amount" if the user stated one.
 - "8,500 naira" or "₦8,500" means amount = 8500.
-- Questions about their own data ("how much did I spend on food?") => intent "query".
+- Questions about their own data ("how much did I spend on food?") => intent "query"
+  (return just that one query action).
 - For expenses/income, put the category or source in "category".
-- intent "budget": the user wants to set a monthly spending limit for a category
-  (e.g. "set a 50,000 budget for food"). Put the category in "category" and the
-  limit in "amount".
-- intent "goal": the user wants to create a savings goal (e.g. "save 200,000 for
-  a laptop"). Put the goal name in "title" and the target in "amount".
+- intent "budget": set a monthly spending limit for a category (e.g. "set a 50,000
+  budget for food"): category in "category", limit in "amount".
+- intent "goal": create a savings goal (e.g. "save 200,000 for a laptop"): name in
+  "title", target in "amount".
 - For a "query", set "period" to the timeframe named: today, this_week, last_week,
-  this_month (the default when none is named), or last_month.
-- For a "query", set "query_metric" to "income" for money received/earned;
-  "budget_status" when they ask how they are doing against a budget
-  ("how am I doing on my food budget") — put the category in "category";
-  otherwise "spend". If a spending category is named put it in "category"; for a
-  plain total leave "category" null. "query_metric"/"period" are null for
-  non-query intents.
+  this_month (default), last_month. Set "query_metric":
+  - "income" for money received/earned;
+  - "budget_status" for "how am I doing on my <category> budget" (category in "category");
+  - "balance" for "what's my balance" / net position;
+  - "summary_today" for "summarise today" / "how's my day";
+  - otherwise "spend". Name a category in "category" when given; else null.
 - If a date is mentioned, "due_date" is ISO yyyy-mm-dd; otherwise null.
 - If unsure, use intent "unknown".`;
 
@@ -54,7 +58,13 @@ type Action = {
   description?: string | null;
   due_date?: string | null;
   period?: Period | null;
-  query_metric?: "spend" | "income" | "budget_status" | null;
+  query_metric?:
+    | "spend"
+    | "income"
+    | "budget_status"
+    | "balance"
+    | "summary_today"
+    | null;
   confidence?: number;
 };
 
@@ -122,6 +132,42 @@ async function answerQuery(action: Action): Promise<{ text: string; amount: numb
   }
 
   const category = action.category?.trim();
+
+  // "What's my balance?" — all income minus all expenses.
+  if (action.query_metric === "balance") {
+    const [{ data: incAll }, { data: expAll }] = await Promise.all([
+      supabase.from("income").select("amount"),
+      supabase.from("expenses").select("amount"),
+    ]);
+    const balance = sum(incAll) - sum(expAll);
+    return {
+      text: `Your balance is ${naira(balance)} (all income minus all expenses).`,
+      amount: balance,
+    };
+  }
+
+  // "Summarise today."
+  if (action.query_metric === "summary_today") {
+    const today = iso(new Date());
+    const [{ data: expT }, { data: incT }, { data: tasksT }] = await Promise.all([
+      supabase.from("expenses").select("amount").eq("occurred_on", today),
+      supabase.from("income").select("amount").eq("occurred_on", today),
+      supabase
+        .from("tasks")
+        .select("id")
+        .eq("due_date", today)
+        .in("status", ["pending", "in_progress"]),
+    ]);
+    const spent = sum(expT);
+    const earned = sum(incT);
+    const n = (tasksT ?? []).length;
+    return {
+      text: `Today: ${n} task${n === 1 ? "" : "s"} due, spent ${naira(spent)}${
+        earned > 0 ? `, earned ${naira(earned)}` : ""
+      }.`,
+      amount: spent,
+    };
+  }
 
   // "How am I doing on my <category> budget?" — always the current month, since
   // budgets are monthly.
@@ -245,19 +291,30 @@ export async function POST(req: Request) {
     };
     const text = data.choices?.[0]?.message?.content ?? "";
 
-    let action: Action;
+    let parsed: { actions?: Action[]; intent?: string } & Partial<Action>;
     try {
-      action = JSON.parse(text) as Action;
+      parsed = JSON.parse(text);
     } catch {
-      action = { intent: "unknown", confidence: 0 };
+      parsed = { intent: "unknown" };
     }
 
-    if (action.intent === "query") {
-      const answer = await answerQuery(action);
-      return NextResponse.json({ action, answer });
+    // Accept the new { actions: [...] } shape or a legacy single action object.
+    let actions: Action[] = Array.isArray(parsed.actions)
+      ? parsed.actions
+      : parsed.intent
+        ? [parsed as Action]
+        : [];
+    actions = actions.filter((a) => a && a.intent);
+    if (actions.length === 0) actions = [{ intent: "unknown" }];
+
+    // A data question is answered directly (take the first query action).
+    const query = actions.find((a) => a.intent === "query");
+    if (query) {
+      const answer = await answerQuery(query);
+      return NextResponse.json({ answer });
     }
 
-    return NextResponse.json({ action });
+    return NextResponse.json({ actions });
   } catch (e) {
     return NextResponse.json(
       { error: "Unexpected error.", detail: String(e) },
