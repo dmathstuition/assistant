@@ -12,15 +12,19 @@ import {
   CalendarIcon,
   SparklesIcon,
   TrendingUpIcon,
+  IncomeIcon,
 } from "@/components/icons";
 
 const NAV = [
   { href: "/dashboard", label: "Home", Icon: ChecklistIcon },
   { href: "/planner", label: "Planner", Icon: CalendarIcon },
+  { href: "/income", label: "Income", Icon: IncomeIcon },
   { href: "/analytics", label: "Stats", Icon: TrendingUpIcon },
   { href: "/history", label: "History", Icon: ListIcon },
   { href: "/guide", label: "Guide", Icon: SparklesIcon },
 ];
+// The phone bottom bar shows the five most-used; Guide stays in the top nav.
+const MOBILE_NAV = NAV.slice(0, 5);
 
 export default async function AppLayout({
   children,
@@ -74,7 +78,7 @@ export default async function AppLayout({
 
         {/* App-like bottom tab bar on phones. */}
         <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-white/10 bg-[rgba(8,14,26,0.85)] backdrop-blur-xl md:hidden">
-          {NAV.map(({ href, label, Icon }) => (
+          {MOBILE_NAV.map(({ href, label, Icon }) => (
             <Link
               key={href}
               href={href}

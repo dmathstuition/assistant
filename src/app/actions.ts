@@ -41,24 +41,49 @@ export async function addIncome(formData: FormData) {
   const { supabase, user } = await requireUser();
   const amount = Number(formData.get("amount"));
   if (!amount || amount <= 0) throw new Error("Enter a valid amount.");
-  const source_name = String(formData.get("source_name") || "Other");
-  const description = String(formData.get("description") || "") || null;
+  const source_name = String(formData.get("source_name") || "Other").trim() || "Other";
+  const category = String(formData.get("category") || "").trim() || null;
+  const account = String(formData.get("account") || "").trim() || null;
+  const description = String(formData.get("description") || "").trim() || null;
+  const notes = String(formData.get("notes") || "").trim() || null;
+  const occurred_on =
+    String(formData.get("occurred_on") || "") || new Date().toISOString().slice(0, 10);
+
   await supabase.from("income").insert({
     user_id: user.id,
     amount,
     source_name,
+    category,
+    account,
     description,
+    notes,
+    occurred_on,
     source: "manual",
   });
+
+  // "Recurring" income also creates a rule so it auto-logs going forward.
+  const recurrence = String(formData.get("recurrence") || "");
+  if (["daily", "weekly", "monthly"].includes(recurrence)) {
+    await supabase.from("recurring_rules").insert({
+      user_id: user.id,
+      kind: "income",
+      amount,
+      category: source_name,
+      description,
+      frequency: recurrence,
+      next_run: advanceDate(occurred_on, recurrence),
+    });
+  }
+
   await mirrorTransaction({
     kind: "income",
     amount,
     category: source_name,
     description,
-    occurred_on: new Date().toISOString().slice(0, 10),
+    occurred_on,
     email: user.email ?? null,
   });
-  revalidatePath("/dashboard");
+  revalidateAll();
 }
 
 const RECURRENCE = ["daily", "weekly", "monthly"];
@@ -323,6 +348,7 @@ export async function deleteRecurringRule(id: string) {
 function revalidateAll() {
   revalidatePath("/dashboard");
   revalidatePath("/history");
+  revalidatePath("/income");
 }
 
 export async function deleteExpense(id: string) {
@@ -375,7 +401,15 @@ export async function updateExpense(
 
 export async function updateIncome(
   id: string,
-  data: { amount: number; source_name: string; description: string | null; occurred_on: string },
+  data: {
+    amount: number;
+    source_name: string;
+    description: string | null;
+    occurred_on: string;
+    category?: string | null;
+    account?: string | null;
+    notes?: string | null;
+  },
 ) {
   const { supabase } = await requireUser();
   if (!data.amount || data.amount <= 0) throw new Error("Enter a valid amount.");
@@ -386,6 +420,9 @@ export async function updateIncome(
       source_name: data.source_name.trim() || "Other",
       description: data.description?.trim() || null,
       occurred_on: data.occurred_on,
+      category: data.category?.trim() || null,
+      account: data.account?.trim() || null,
+      notes: data.notes?.trim() || null,
     })
     .eq("id", id);
   revalidateAll();

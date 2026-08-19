@@ -280,3 +280,13 @@ alter table public.tasks
   add column if not exists reminder_minutes int;
 alter table public.tasks
   add column if not exists notes text;
+
+-- =====================================================================
+--  MIGRATION: INCOME FIELDS (added after Phase 1)
+--  Paste this block on its own into Supabase → SQL Editor → Run.
+--  Adds a type/category, the account the money landed in, and notes to the
+--  existing income table (which already has amount, source_name, date).
+-- =====================================================================
+alter table public.income add column if not exists category text;
+alter table public.income add column if not exists account text;
+alter table public.income add column if not exists notes text;
