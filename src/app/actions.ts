@@ -198,6 +198,21 @@ export async function saveAssistantAction(action: AssistantAction) {
         ? new Date(action.due_date).toISOString()
         : new Date().toISOString(),
     });
+  } else if (action.intent === "budget" && action.amount && action.category) {
+    await supabase.from("budgets").upsert(
+      {
+        user_id: user.id,
+        category: action.category,
+        monthly_limit: action.amount,
+      },
+      { onConflict: "user_id,category" },
+    );
+  } else if (action.intent === "goal" && action.amount) {
+    await supabase.from("savings_goals").insert({
+      user_id: user.id,
+      name: action.title || action.description || "Savings goal",
+      target_amount: action.amount,
+    });
   } else {
     throw new Error("Nothing to save for this request.");
   }
