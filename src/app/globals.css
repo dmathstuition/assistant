@@ -1,0 +1,19 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background: #0A1628;
+  color: #e8eefc;
+  -webkit-font-smoothing: antialiased;
+}
+
+.card {
+  background: #0f1f38;
+  border: 1px solid #1c3050;
+  border-radius: 16px;
+}
