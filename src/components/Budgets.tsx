@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { upsertBudget } from "@/app/actions";
 import { naira } from "@/components/Naira";
+import { WalletIcon } from "@/components/icons";
 
 const EXPENSE_CATEGORIES = [
   "Food",
@@ -52,7 +53,8 @@ export default function Budgets({ budgets }: { budgets: BudgetRow[] }) {
 
   return (
     <div className="card p-5">
-      <div className="mb-3 text-sm font-semibold text-brand-muted">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-brand-muted">
+        <WalletIcon className="text-base text-brand-accent" />
         Monthly budgets
       </div>
 

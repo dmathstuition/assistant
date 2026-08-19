@@ -10,6 +10,12 @@ import PinSettings from "@/components/PinSettings";
 import SpendingDonut, { type Slice } from "@/components/SpendingDonut";
 import TrendChart, { type MonthPoint } from "@/components/TrendChart";
 import { naira } from "@/components/Naira";
+import {
+  IncomeIcon,
+  WalletIcon,
+  TrendingUpIcon,
+  ChecklistIcon,
+} from "@/components/icons";
 
 export const dynamic = "force-dynamic";
 
@@ -168,14 +174,31 @@ export default async function Dashboard() {
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Stat label="Income this month" value={naira(totalInc)} />
-        <Stat label="Expenses this month" value={naira(totalExp)} />
+        <Stat
+          label="Income this month"
+          value={naira(totalInc)}
+          icon={<IncomeIcon />}
+          tint="text-green-400"
+        />
+        <Stat
+          label="Expenses this month"
+          value={naira(totalExp)}
+          icon={<WalletIcon />}
+          tint="text-brand-accent"
+        />
         <Stat
           label="Net this month"
           value={naira(net)}
           accent={net < 0 ? "text-red-400" : "text-green-400"}
+          icon={<TrendingUpIcon />}
+          tint={net < 0 ? "text-red-400" : "text-green-400"}
         />
-        <Stat label="Open tasks" value={String(taskList.length)} />
+        <Stat
+          label="Open tasks"
+          value={String(taskList.length)}
+          icon={<ChecklistIcon />}
+          tint="text-sky-400"
+        />
       </div>
 
       <CommandBox />
@@ -189,7 +212,8 @@ export default async function Dashboard() {
         <QuickAdd />
 
         <div className="card p-5">
-          <div className="mb-3 text-sm font-semibold text-brand-muted">
+          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-brand-muted">
+            <ChecklistIcon className="text-base text-sky-400" />
             Open tasks
           </div>
           {taskList.length === 0 ? (
@@ -225,14 +249,21 @@ function Stat({
   label,
   value,
   accent,
+  icon,
+  tint,
 }: {
   label: string;
   value: string;
   accent?: string;
+  icon?: React.ReactNode;
+  tint?: string;
 }) {
   return (
     <div className="card p-4">
-      <div className="text-xs text-brand-muted">{label}</div>
+      <div className="flex items-center gap-2 text-xs text-brand-muted">
+        {icon && <span className={`text-base ${tint ?? ""}`}>{icon}</span>}
+        {label}
+      </div>
       <div className={`mt-1 text-lg font-bold ${accent ?? ""}`}>{value}</div>
     </div>
   );

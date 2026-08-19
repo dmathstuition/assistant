@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { exportToGoogleSheet } from "@/app/actions";
+import { DownloadIcon } from "@/components/icons";
 
 // Pushes the user's full history into a new Google Sheet (via the Apps Script
 // bridge) and links them to it. Also offers a plain CSV download that needs no
@@ -27,7 +28,8 @@ export default function ExportButton() {
 
   return (
     <div className="card p-5">
-      <div className="mb-3 text-sm font-semibold text-brand-muted">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-brand-muted">
+        <DownloadIcon className="text-base text-brand-accent" />
         Export your data
       </div>
       <div className="flex flex-wrap gap-2">

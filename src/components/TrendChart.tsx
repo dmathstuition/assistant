@@ -1,4 +1,5 @@
 import { naira } from "@/components/Naira";
+import { TrendingUpIcon } from "@/components/icons";
 
 // Income vs expenses over the last months. Two entities → two fixed hues
 // (income green, expenses orange), a legend plus month labels, one shared y
@@ -23,7 +24,8 @@ export default function TrendChart({ months }: { months: MonthPoint[] }) {
 
   return (
     <div className="card p-5">
-      <div className="mb-1 text-sm font-semibold text-brand-muted">
+      <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-brand-muted">
+        <TrendingUpIcon className="text-base text-brand-accent" />
         Income vs expenses · last {months.length} months
       </div>
 

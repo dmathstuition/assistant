@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { importExpenses, type ImportRow } from "@/app/actions";
+import { UploadIcon } from "@/components/icons";
 
 // Minimal CSV parser: handles quoted fields and escaped quotes. Good enough for
 // bank/exported CSVs; not a full RFC-4180 implementation.
@@ -104,7 +105,8 @@ export default function ImportCsv() {
 
   return (
     <div className="card p-5">
-      <div className="mb-3 text-sm font-semibold text-brand-muted">
+      <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-brand-muted">
+        <UploadIcon className="text-base text-brand-accent" />
         Import expenses (CSV)
       </div>
       <p className="mb-3 text-xs text-brand-muted">

@@ -89,7 +89,7 @@ export default function LoginPage() {
 
         <button
           disabled={busy}
-          className="w-full rounded-lg bg-brand-accent py-2.5 font-semibold text-white disabled:opacity-60"
+          className="btn-accent w-full rounded-lg py-2.5 font-semibold text-white disabled:opacity-60"
         >
           {busy ? "Please wait…" : mode === "signin" ? "Sign in" : "Create account"}
         </button>
