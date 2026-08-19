@@ -235,7 +235,7 @@ export default async function Dashboard() {
         <QuickAction href="/history" label="History">
           <ListIcon />
         </QuickAction>
-        <QuickAction href="/guide" label="Guide">
+        <QuickAction href="/reminders" label="Alerts">
           <BellIcon />
         </QuickAction>
       </div>
@@ -320,9 +320,14 @@ export default async function Dashboard() {
         </div>
 
         <div className="card p-5">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-brand-muted">
-            <BellIcon className="text-base text-brand-accent" />
-            Reminders & alerts
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-semibold text-brand-muted">
+              <BellIcon className="text-base text-brand-accent" />
+              Reminders & alerts
+            </div>
+            <Link href="/reminders" className="text-xs text-brand-accent hover:underline">
+              Manage →
+            </Link>
           </div>
 
           <div className="mb-1 text-xs font-semibold text-brand-muted">Upcoming reminders</div>
