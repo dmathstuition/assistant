@@ -20,7 +20,13 @@ const PALETTE = [
 ];
 const OTHER = "#93a4c3"; // neutral — "Other" is a catch-all, not a real category
 
-export default function SpendingDonut({ slices }: { slices: Slice[] }) {
+export default function SpendingDonut({
+  slices,
+  title = "Spending by category · this month",
+}: {
+  slices: Slice[];
+  title?: string;
+}) {
   const sorted = [...slices]
     .filter((s) => s.amount > 0)
     .sort((a, b) => b.amount - a.amount);
@@ -57,7 +63,7 @@ export default function SpendingDonut({ slices }: { slices: Slice[] }) {
     <div className="card p-5">
       <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-brand-muted">
         <PieIcon className="text-base text-brand-accent" />
-        Spending by category · this month
+        {title}
       </div>
 
       {total === 0 ? (

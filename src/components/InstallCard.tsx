@@ -16,6 +16,7 @@ export default function InstallCard() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [installed, setInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [inApp, setInApp] = useState(false);
   const [done, setDone] = useState(false);
 
   useEffect(() => {
@@ -27,7 +28,11 @@ export default function InstallCard() {
       setInstalled(true);
       return;
     }
-    setIsIOS(/iphone|ipad|ipod/i.test(window.navigator.userAgent));
+    const ua = window.navigator.userAgent;
+    setIsIOS(/iphone|ipad|ipod/i.test(ua));
+    // In-app browsers (Telegram, Facebook, Instagram, Line, WeChat) can't
+    // install PWAs — the user must open the site in a real browser first.
+    setInApp(/Telegram|FBAN|FBAV|Instagram|Line\/|MicroMessenger|; wv\)/i.test(ua));
 
     const onPrompt = (e: Event) => {
       e.preventDefault();
@@ -58,7 +63,14 @@ export default function InstallCard() {
             offline-ready, with notifications.
           </p>
 
-          {isIOS ? (
+          {inApp ? (
+            <p className="mt-3 text-sm text-amber-300">
+              You&apos;re in an in-app browser (like Telegram) that can&apos;t install
+              apps. Tap the ⋮ menu and choose{" "}
+              <b className="text-white">Open in Chrome</b> (or your browser), then
+              install from there.
+            </p>
+          ) : isIOS ? (
             <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-brand-muted">
               <li>
                 Tap the <b className="text-white">Share</b> icon in Safari.

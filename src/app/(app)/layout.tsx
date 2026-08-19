@@ -11,11 +11,13 @@ import {
   ListIcon,
   CalendarIcon,
   SparklesIcon,
+  TrendingUpIcon,
 } from "@/components/icons";
 
 const NAV = [
-  { href: "/dashboard", label: "Dashboard", Icon: ChecklistIcon },
+  { href: "/dashboard", label: "Home", Icon: ChecklistIcon },
   { href: "/planner", label: "Planner", Icon: CalendarIcon },
+  { href: "/analytics", label: "Stats", Icon: TrendingUpIcon },
   { href: "/history", label: "History", Icon: ListIcon },
   { href: "/guide", label: "Guide", Icon: SparklesIcon },
 ];
