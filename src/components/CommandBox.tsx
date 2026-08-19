@@ -42,7 +42,8 @@ export default function CommandBox() {
       if (d.error) setMsg(d.error);
       else if (d.action?.intent === "query")
         setMsg(
-          "Data questions (\"how much did I spend?\") are coming in the next build. For now I can record expenses, income, tasks and reminders.",
+          d.answer?.text ??
+            "I couldn't work out an answer for that question.",
         );
       else if (!d.action || d.action.intent === "unknown")
         setMsg("I couldn't understand that. Try rephrasing.");
