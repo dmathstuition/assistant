@@ -1,7 +1,8 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import CommandBox from "@/components/CommandBox";
 import QuickAdd from "@/components/QuickAdd";
-import TaskItem from "@/components/TaskItem";
+import TaskCard, { type FullTask } from "@/components/TaskCard";
 import Budgets, { type BudgetRow } from "@/components/Budgets";
 import SavingsGoals, { type GoalRow } from "@/components/SavingsGoals";
 import ExportButton from "@/components/ExportButton";
@@ -17,7 +18,12 @@ import {
   IncomeIcon,
   WalletIcon,
   TrendingUpIcon,
-  ChecklistIcon,
+  CalendarIcon,
+  ClockIcon,
+  BellIcon,
+  ListIcon,
+  PlusIcon,
+  PiggyIcon,
 } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
@@ -62,24 +68,23 @@ type Row = { amount: number };
 type ExpenseRow = { amount: number; category: string | null };
 type DatedRow = { amount: number; occurred_on: string };
 type Budget = { id: string; category: string; monthly_limit: number };
-type Task = {
-  id: string;
-  title: string;
-  status: string;
-  due_date: string | null;
-  due_time: string | null;
-  priority: string;
-};
+
+const TASK_SELECT =
+  "id,title,description,category,priority,status,due_date,due_time,recurrence,reminder_minutes,notes";
 
 export default async function Dashboard() {
   const supabase = await createClient();
   const start = monthStart();
+  const today = new Date().toISOString().slice(0, 10);
+  const nowISO = new Date().toISOString();
 
   const trendStart = windowStart(6);
   const [
     { data: exp },
     { data: inc },
-    { data: tasks },
+    { data: todayRows },
+    { data: overdueRows },
+    { data: reminderRows },
     { data: budgetRows },
     { data: goalRows },
     { data: expTrend },
@@ -93,10 +98,24 @@ export default async function Dashboard() {
       supabase.from("income").select("amount").gte("occurred_on", start),
       supabase
         .from("tasks")
-        .select("id,title,status,due_date,due_time,priority")
-        .neq("status", "completed")
-        .order("created_at", { ascending: false })
-        .limit(8),
+        .select(TASK_SELECT)
+        .eq("due_date", today)
+        .in("status", ["pending", "in_progress"])
+        .order("due_time", { ascending: true, nullsFirst: false }),
+      supabase
+        .from("tasks")
+        .select(TASK_SELECT)
+        .lt("due_date", today)
+        .in("status", ["pending", "in_progress"])
+        .order("due_date", { ascending: true })
+        .limit(20),
+      supabase
+        .from("reminders")
+        .select("id,title,remind_at")
+        .eq("is_done", false)
+        .gte("remind_at", nowISO)
+        .order("remind_at", { ascending: true })
+        .limit(6),
       supabase.from("budgets").select("id,category,monthly_limit"),
       supabase
         .from("savings_goals")
@@ -120,7 +139,15 @@ export default async function Dashboard() {
   const totalExp = expenses.reduce((s, r) => s + Number(r.amount), 0);
   const totalInc = ((inc as Row[]) ?? []).reduce((s, r) => s + Number(r.amount), 0);
   const net = totalInc - totalExp;
-  const taskList = (tasks as Task[]) ?? [];
+
+  const todayTasks = (todayRows as FullTask[]) ?? [];
+  const overdueTasks = (overdueRows as FullTask[]) ?? [];
+  const reminders = (reminderRows as { id: string; title: string; remind_at: string }[]) ?? [];
+  const schedule = todayTasks.filter((t) => t.due_time);
+  const priorities = [...overdueTasks, ...todayTasks]
+    .filter((t) => t.priority === "critical" || t.priority === "high")
+    .slice(0, 5);
+  const openToday = todayTasks.length + overdueTasks.length;
 
   // Spent-this-month per category, keyed case-insensitively to match budgets.
   const spentByCategory = new Map<string, number>();
@@ -140,6 +167,15 @@ export default async function Dashboard() {
     target_amount: Number(g.target_amount),
     current_amount: Number(g.current_amount),
   }));
+
+  const savedTotal = goals.reduce((s, g) => s + g.current_amount, 0);
+  const alerts = budgets
+    .filter((b) => b.monthly_limit > 0 && b.spent / b.monthly_limit >= 0.8)
+    .map((b) => ({
+      category: b.category,
+      pct: Math.round((b.spent / b.monthly_limit) * 100),
+      over: b.spent > b.monthly_limit,
+    }));
 
   // Donut slices: this-month spend per category, keeping first-seen casing.
   const sliceMap = new Map<string, Slice>();
@@ -188,19 +224,25 @@ export default async function Dashboard() {
         </p>
       </div>
 
+      {/* Quick actions */}
+      <div className="flex flex-wrap gap-2">
+        <QuickAction href="/planner" label="Add task">
+          <PlusIcon />
+        </QuickAction>
+        <QuickAction href="/analytics" label="Stats">
+          <TrendingUpIcon />
+        </QuickAction>
+        <QuickAction href="/history" label="History">
+          <ListIcon />
+        </QuickAction>
+        <QuickAction href="/guide" label="Guide">
+          <BellIcon />
+        </QuickAction>
+      </div>
+
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Stat
-          label="Income this month"
-          value={naira(totalInc)}
-          icon={<IncomeIcon />}
-          tint="text-green-400"
-        />
-        <Stat
-          label="Expenses this month"
-          value={naira(totalExp)}
-          icon={<WalletIcon />}
-          tint="text-brand-accent"
-        />
+        <Stat label="Income this month" value={naira(totalInc)} icon={<IncomeIcon />} tint="text-green-400" />
+        <Stat label="Expenses this month" value={naira(totalExp)} icon={<WalletIcon />} tint="text-brand-accent" />
         <Stat
           label="Net this month"
           value={naira(net)}
@@ -208,15 +250,121 @@ export default async function Dashboard() {
           icon={<TrendingUpIcon />}
           tint={net < 0 ? "text-red-400" : "text-green-400"}
         />
-        <Stat
-          label="Open tasks"
-          value={String(taskList.length)}
-          icon={<ChecklistIcon />}
-          tint="text-sky-400"
-        />
+        <Stat label="Saved" value={naira(savedTotal)} icon={<PiggyIcon />} tint="text-sky-400" />
       </div>
 
       <InstallCard />
+
+      {/* Today + reminders/alerts */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <div className="card p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm font-semibold text-brand-muted">
+              <CalendarIcon className="text-base text-brand-accent" />
+              Today
+              {openToday > 0 && (
+                <span className="rounded-full bg-white/5 px-2 py-0.5 text-xs">{openToday}</span>
+              )}
+            </div>
+            <Link href="/planner" className="text-xs text-brand-accent hover:underline">
+              Planner →
+            </Link>
+          </div>
+
+          {overdueTasks.length > 0 && (
+            <div className="mb-2">
+              <div className="mb-1 text-xs font-semibold text-red-400">
+                Overdue ({overdueTasks.length})
+              </div>
+              <div className="divide-y divide-white/5">
+                {overdueTasks.slice(0, 4).map((t) => (
+                  <TaskCard key={t.id} task={t} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {schedule.length > 0 && (
+            <div className="mb-1 mt-2 flex items-center gap-1 text-xs font-semibold text-brand-muted">
+              <ClockIcon className="text-xs" /> Schedule
+            </div>
+          )}
+          {todayTasks.length === 0 ? (
+            <p className="text-sm text-brand-muted">Nothing due today. Enjoy — or plan ahead.</p>
+          ) : (
+            <div className="divide-y divide-white/5">
+              {todayTasks.map((t) => (
+                <TaskCard key={t.id} task={t} />
+              ))}
+            </div>
+          )}
+
+          {priorities.length > 0 && (
+            <div className="mt-3 border-t border-white/5 pt-3">
+              <div className="mb-1 text-xs font-semibold text-brand-muted">Top priorities</div>
+              <ul className="space-y-1 text-sm">
+                {priorities.map((t) => (
+                  <li key={t.id} className="flex items-center gap-2">
+                    <span
+                      className={`h-2 w-2 rounded-full ${t.priority === "critical" ? "bg-red-500" : "bg-orange-500"}`}
+                    />
+                    <span className="truncate">{t.title}</span>
+                    {t.due_date && t.due_date < today && (
+                      <span className="ml-auto text-xs text-red-400">overdue</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        <div className="card p-5">
+          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-brand-muted">
+            <BellIcon className="text-base text-brand-accent" />
+            Reminders & alerts
+          </div>
+
+          <div className="mb-1 text-xs font-semibold text-brand-muted">Upcoming reminders</div>
+          {reminders.length === 0 ? (
+            <p className="text-sm text-brand-muted">No upcoming reminders.</p>
+          ) : (
+            <ul className="space-y-1.5 text-sm">
+              {reminders.map((r) => (
+                <li key={r.id} className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand-accent" />
+                  <span className="truncate">{r.title}</span>
+                  <span className="ml-auto whitespace-nowrap text-xs text-brand-muted">
+                    {new Date(r.remind_at).toLocaleString("en-NG", {
+                      day: "numeric",
+                      month: "short",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="mb-1 mt-4 text-xs font-semibold text-brand-muted">Financial alerts</div>
+          {alerts.length === 0 ? (
+            <p className="text-sm text-brand-muted">All budgets healthy. 👍</p>
+          ) : (
+            <ul className="space-y-1.5 text-sm">
+              {alerts.map((a) => (
+                <li key={a.category} className="flex items-center gap-2">
+                  <span className={`h-1.5 w-1.5 rounded-full ${a.over ? "bg-red-500" : "bg-orange-500"}`} />
+                  <span className="truncate">{a.category}</span>
+                  <span className={`ml-auto text-xs ${a.over ? "text-red-400" : "text-orange-400"}`}>
+                    {a.pct}% {a.over ? "over" : "used"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
 
       <CommandBox />
 
@@ -225,27 +373,7 @@ export default async function Dashboard() {
         <TrendChart months={trend} />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <QuickAdd />
-
-        <div className="card p-5">
-          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-brand-muted">
-            <ChecklistIcon className="text-base text-sky-400" />
-            Open tasks
-          </div>
-          {taskList.length === 0 ? (
-            <p className="text-sm text-brand-muted">
-              Nothing yet. Add a task, or ask the assistant.
-            </p>
-          ) : (
-            <div className="divide-y divide-brand-border">
-              {taskList.map((t) => (
-                <TaskItem key={t.id} {...t} />
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
+      <QuickAdd />
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Budgets budgets={budgets} />
@@ -264,6 +392,26 @@ export default async function Dashboard() {
         <PinSettings />
       </div>
     </div>
+  );
+}
+
+function QuickAction({
+  href,
+  label,
+  children,
+}: {
+  href: string;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="btn-ghost flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-brand-muted hover:text-white"
+    >
+      <span className="text-base text-brand-accent">{children}</span>
+      {label}
+    </Link>
   );
 }
 

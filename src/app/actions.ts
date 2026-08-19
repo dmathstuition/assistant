@@ -61,32 +61,97 @@ export async function addIncome(formData: FormData) {
   revalidatePath("/dashboard");
 }
 
-export async function addTask(formData: FormData) {
-  const { supabase, user } = await requireUser();
-  const title = String(formData.get("title") || "").trim();
-  if (!title) throw new Error("Enter a task title.");
-  const due = String(formData.get("due_date") || "");
-  const time = String(formData.get("due_time") || "");
-  await supabase.from("tasks").insert({
-    user_id: user.id,
-    title,
+const RECURRENCE = ["daily", "weekly", "monthly"];
+
+function taskFieldsFrom(formData: FormData) {
+  const recurrenceRaw = String(formData.get("recurrence") || "");
+  const reminder = String(formData.get("reminder_minutes") || "");
+  return {
+    title: String(formData.get("title") || "").trim(),
+    description: String(formData.get("description") || "").trim() || null,
+    category: String(formData.get("category") || "").trim() || null,
     priority: String(formData.get("priority") || "medium"),
-    due_date: due || null,
-    due_time: time || null,
-  });
-  revalidatePath("/dashboard");
+    status: String(formData.get("status") || "pending"),
+    due_date: String(formData.get("due_date") || "") || null,
+    due_time: String(formData.get("due_time") || "") || null,
+    recurrence: RECURRENCE.includes(recurrenceRaw) ? recurrenceRaw : null,
+    reminder_minutes: reminder ? Number(reminder) : null,
+    notes: String(formData.get("notes") || "").trim() || null,
+  };
 }
 
-export async function toggleTask(id: string, done: boolean) {
+export async function addTask(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const fields = taskFieldsFrom(formData);
+  if (!fields.title) throw new Error("Enter a task title.");
+  await supabase.from("tasks").insert({ user_id: user.id, ...fields });
+  revalidateTasks();
+}
+
+export async function updateTask(id: string, formData: FormData) {
   const { supabase } = await requireUser();
+  const fields = taskFieldsFrom(formData);
+  if (!fields.title) throw new Error("Enter a task title.");
+  await supabase.from("tasks").update(fields).eq("id", id);
+  revalidateTasks();
+}
+
+function advanceDate(dateISO: string, recurrence: string): string {
+  const [y, m, d] = dateISO.split("-").map(Number);
+  const base = new Date(Date.UTC(y, m - 1, d));
+  if (recurrence === "daily") base.setUTCDate(base.getUTCDate() + 1);
+  else if (recurrence === "weekly") base.setUTCDate(base.getUTCDate() + 7);
+  else base.setUTCMonth(base.getUTCMonth() + 1);
+  return base.toISOString().slice(0, 10);
+}
+
+// Set a task's status. Completing a recurring task also spawns its next
+// occurrence (a fresh pending copy advanced by the recurrence).
+export async function setTaskStatus(id: string, status: string) {
+  const { supabase, user } = await requireUser();
+  const completing = status === "completed";
+  const { data: task } = await supabase
+    .from("tasks")
+    .select(
+      "title,description,category,priority,due_date,due_time,recurrence,reminder_minutes,notes",
+    )
+    .eq("id", id)
+    .single();
+
   await supabase
     .from("tasks")
     .update({
-      status: done ? "completed" : "pending",
-      completed_at: done ? new Date().toISOString() : null,
+      status,
+      completed_at: completing ? new Date().toISOString() : null,
     })
     .eq("id", id);
+
+  if (completing && task?.recurrence && task.due_date) {
+    await supabase.from("tasks").insert({
+      user_id: user.id,
+      title: task.title,
+      description: task.description,
+      category: task.category,
+      priority: task.priority,
+      due_date: advanceDate(task.due_date, task.recurrence),
+      due_time: task.due_time,
+      recurrence: task.recurrence,
+      reminder_minutes: task.reminder_minutes,
+      notes: task.notes,
+      status: "pending",
+    });
+  }
+  revalidateTasks();
+}
+
+// Kept for the simple checkbox on dashboard/planner lists.
+export async function toggleTask(id: string, done: boolean) {
+  await setTaskStatus(id, done ? "completed" : "pending");
+}
+
+function revalidateTasks() {
   revalidatePath("/dashboard");
+  revalidatePath("/planner");
 }
 
 export async function upsertBudget(formData: FormData) {
