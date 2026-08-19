@@ -3,6 +3,12 @@ import CommandBox from "@/components/CommandBox";
 import QuickAdd from "@/components/QuickAdd";
 import TaskItem from "@/components/TaskItem";
 import Budgets, { type BudgetRow } from "@/components/Budgets";
+import SavingsGoals, { type GoalRow } from "@/components/SavingsGoals";
+import ExportButton from "@/components/ExportButton";
+import ImportCsv from "@/components/ImportCsv";
+import PinSettings from "@/components/PinSettings";
+import SpendingDonut, { type Slice } from "@/components/SpendingDonut";
+import TrendChart, { type MonthPoint } from "@/components/TrendChart";
 import { naira } from "@/components/Naira";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +16,30 @@ export const dynamic = "force-dynamic";
 function monthStart() {
   const d = new Date();
   return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
+}
+
+// First day of the month N-1 months ago (so a 6-window includes this month).
+function windowStart(months: number) {
+  const d = new Date();
+  return new Date(d.getFullYear(), d.getMonth() - (months - 1), 1)
+    .toISOString()
+    .slice(0, 10);
+}
+
+// Build empty buckets for the last N months, newest last, keyed "YYYY-MM".
+function monthBuckets(months: number) {
+  const out: { key: string; label: string; income: number; expense: number }[] = [];
+  const now = new Date();
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    out.push({
+      key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+      label: d.toLocaleDateString("en-NG", { month: "short" }),
+      income: 0,
+      expense: 0,
+    });
+  }
+  return out;
 }
 
 function greeting() {
@@ -21,6 +51,7 @@ function greeting() {
 
 type Row = { amount: number };
 type ExpenseRow = { amount: number; category: string | null };
+type DatedRow = { amount: number; occurred_on: string };
 type Budget = { category: string; monthly_limit: number };
 type Task = {
   id: string;
@@ -34,8 +65,16 @@ export default async function Dashboard() {
   const supabase = await createClient();
   const start = monthStart();
 
-  const [{ data: exp }, { data: inc }, { data: tasks }, { data: budgetRows }] =
-    await Promise.all([
+  const trendStart = windowStart(6);
+  const [
+    { data: exp },
+    { data: inc },
+    { data: tasks },
+    { data: budgetRows },
+    { data: goalRows },
+    { data: expTrend },
+    { data: incTrend },
+  ] = await Promise.all([
       supabase
         .from("expenses")
         .select("amount,category")
@@ -48,6 +87,18 @@ export default async function Dashboard() {
         .order("created_at", { ascending: false })
         .limit(8),
       supabase.from("budgets").select("category,monthly_limit"),
+      supabase
+        .from("savings_goals")
+        .select("id,name,target_amount,current_amount,deadline")
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("expenses")
+        .select("amount,occurred_on")
+        .gte("occurred_on", trendStart),
+      supabase
+        .from("income")
+        .select("amount,occurred_on")
+        .gte("occurred_on", trendStart),
     ]);
 
   const expenses = (exp as ExpenseRow[]) ?? [];
@@ -66,6 +117,40 @@ export default async function Dashboard() {
     category: b.category,
     monthly_limit: Number(b.monthly_limit),
     spent: spentByCategory.get(b.category.toLowerCase()) ?? 0,
+  }));
+
+  const goals: GoalRow[] = ((goalRows as GoalRow[]) ?? []).map((g) => ({
+    ...g,
+    target_amount: Number(g.target_amount),
+    current_amount: Number(g.current_amount),
+  }));
+
+  // Donut slices: this-month spend per category, keeping first-seen casing.
+  const sliceMap = new Map<string, Slice>();
+  for (const e of expenses) {
+    const name = e.category ?? "Other";
+    const key = name.toLowerCase();
+    const prev = sliceMap.get(key);
+    if (prev) prev.amount += Number(e.amount);
+    else sliceMap.set(key, { category: name, amount: Number(e.amount) });
+  }
+  const slices: Slice[] = [...sliceMap.values()];
+
+  // Trend: bucket the last 6 months of income and expenses.
+  const buckets = monthBuckets(6);
+  const byKey = new Map(buckets.map((b) => [b.key, b]));
+  for (const e of (expTrend as DatedRow[]) ?? []) {
+    const b = byKey.get(e.occurred_on.slice(0, 7));
+    if (b) b.expense += Number(e.amount);
+  }
+  for (const i of (incTrend as DatedRow[]) ?? []) {
+    const b = byKey.get(i.occurred_on.slice(0, 7));
+    if (b) b.income += Number(i.amount);
+  }
+  const trend: MonthPoint[] = buckets.map((b) => ({
+    label: b.label,
+    income: b.income,
+    expense: b.expense,
   }));
 
   return (
@@ -96,6 +181,11 @@ export default async function Dashboard() {
       <CommandBox />
 
       <div className="grid gap-6 lg:grid-cols-2">
+        <SpendingDonut slices={slices} />
+        <TrendChart months={trend} />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
         <QuickAdd />
 
         <div className="card p-5">
@@ -116,7 +206,17 @@ export default async function Dashboard() {
         </div>
       </div>
 
-      <Budgets budgets={budgets} />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Budgets budgets={budgets} />
+        <SavingsGoals goals={goals} />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <ExportButton />
+        <ImportCsv />
+      </div>
+
+      <PinSettings />
     </div>
   );
 }

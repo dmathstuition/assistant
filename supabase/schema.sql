@@ -149,3 +149,48 @@ alter table public.budgets enable row level security;
 
 drop policy if exists "own budgets" on public.budgets;
 create policy "own budgets" on public.budgets for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- =====================================================================
+--  MIGRATION: SAVINGS GOALS (added after Phase 1)
+--  Paste this block on its own into Supabase → SQL Editor → Run.
+--  A named savings target per user, with the amount saved so far. RLS
+--  matches the other data tables so a user only sees/edits their own rows.
+-- =====================================================================
+create table if not exists public.savings_goals (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  name text not null,
+  target_amount numeric(14,2) not null check (target_amount >= 0),
+  current_amount numeric(14,2) not null default 0 check (current_amount >= 0),
+  deadline date,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_savings_goals_user on public.savings_goals(user_id);
+
+alter table public.savings_goals enable row level security;
+
+drop policy if exists "own savings_goals" on public.savings_goals;
+create policy "own savings_goals" on public.savings_goals for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- =====================================================================
+--  MIGRATION: BUDGET ALERTS (added after Phase 1)
+--  Paste this block on its own into Supabase → SQL Editor → Run.
+--  One row per (category, threshold, month) alert already sent, so the
+--  daily alert cron never emails the same 80%/100% crossing twice. Written
+--  only by the service-role cron, but RLS is on and scoped for safety.
+-- =====================================================================
+create table if not exists public.budget_alerts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  category text not null,
+  threshold int not null check (threshold in (80, 100)),
+  period text not null,               -- 'YYYY-MM' the alert applies to
+  created_at timestamptz not null default now(),
+  unique (user_id, category, threshold, period)
+);
+
+alter table public.budget_alerts enable row level security;
+
+drop policy if exists "own budget_alerts" on public.budget_alerts;
+create policy "own budget_alerts" on public.budget_alerts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
