@@ -194,3 +194,54 @@ alter table public.budget_alerts enable row level security;
 
 drop policy if exists "own budget_alerts" on public.budget_alerts;
 create policy "own budget_alerts" on public.budget_alerts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- =====================================================================
+--  MIGRATION: WEB PUSH SUBSCRIPTIONS (added after Phase 1)
+--  Paste this block on its own into Supabase → SQL Editor → Run.
+--  One row per device/browser the user enabled push on. The push cron
+--  (service role) reads these to deliver notifications; RLS keeps the
+--  browser able to manage only its own user's subscriptions.
+-- =====================================================================
+create table if not exists public.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_push_subs_user on public.push_subscriptions(user_id);
+
+alter table public.push_subscriptions enable row level security;
+
+drop policy if exists "own push_subscriptions" on public.push_subscriptions;
+create policy "own push_subscriptions" on public.push_subscriptions for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- =====================================================================
+--  MIGRATION: RECURRING RULES (added after Phase 1)
+--  Paste this block on its own into Supabase → SQL Editor → Run.
+--  Templates that auto-create an expense or income on a schedule (rent,
+--  salary, subscriptions). A daily cron inserts the transaction whenever
+--  next_run is due, then advances next_run. RLS scopes rows to the owner.
+-- =====================================================================
+create table if not exists public.recurring_rules (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  kind text not null check (kind in ('expense','income')),
+  amount numeric(14,2) not null check (amount >= 0),
+  category text not null default 'Other',      -- category (expense) or source (income)
+  description text,
+  frequency text not null check (frequency in ('daily','weekly','monthly')),
+  next_run date not null,
+  active boolean not null default true,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_recurring_user on public.recurring_rules(user_id);
+create index if not exists idx_recurring_due on public.recurring_rules(active, next_run);
+
+alter table public.recurring_rules enable row level security;
+
+drop policy if exists "own recurring_rules" on public.recurring_rules;
+create policy "own recurring_rules" on public.recurring_rules for all using (auth.uid() = user_id) with check (auth.uid() = user_id);

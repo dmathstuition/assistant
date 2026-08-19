@@ -64,6 +64,7 @@ type Task = {
   title: string;
   status: string;
   due_date: string | null;
+  due_time: string | null;
   priority: string;
 };
 
@@ -88,7 +89,7 @@ export default async function Dashboard() {
       supabase.from("income").select("amount").gte("occurred_on", start),
       supabase
         .from("tasks")
-        .select("id,title,status,due_date,priority")
+        .select("id,title,status,due_date,due_time,priority")
         .neq("status", "completed")
         .order("created_at", { ascending: false })
         .limit(8),

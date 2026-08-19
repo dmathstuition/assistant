@@ -66,11 +66,13 @@ export async function addTask(formData: FormData) {
   const title = String(formData.get("title") || "").trim();
   if (!title) throw new Error("Enter a task title.");
   const due = String(formData.get("due_date") || "");
+  const time = String(formData.get("due_time") || "");
   await supabase.from("tasks").insert({
     user_id: user.id,
     title,
     priority: String(formData.get("priority") || "medium"),
     due_date: due || null,
+    due_time: time || null,
   });
   revalidatePath("/dashboard");
 }

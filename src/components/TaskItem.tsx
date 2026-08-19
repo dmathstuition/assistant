@@ -8,12 +8,14 @@ export default function TaskItem({
   title,
   status,
   due_date,
+  due_time,
   priority,
 }: {
   id: string;
   title: string;
   status: string;
   due_date: string | null;
+  due_time?: string | null;
   priority: string;
 }) {
   const [done, setDone] = useState(status === "completed");
@@ -45,8 +47,12 @@ export default function TaskItem({
       <input type="checkbox" checked={done} onChange={flip} disabled={busy} />
       <span className={`h-2 w-2 rounded-full ${dot}`} />
       <span className={done ? "text-brand-muted line-through" : ""}>{title}</span>
-      {due_date && (
-        <span className="ml-auto text-xs text-brand-muted">{due_date}</span>
+      {(due_date || due_time) && (
+        <span className="ml-auto text-xs text-brand-muted">
+          {[due_date, due_time ? due_time.slice(0, 5) : null]
+            .filter(Boolean)
+            .join(" · ")}
+        </span>
       )}
     </label>
   );

@@ -103,14 +103,21 @@ export default function QuickAdd() {
         {tab === "task" && (
           <>
             <input name="title" placeholder="Task title" className={input} />
+            <select name="priority" className={input} defaultValue="medium">
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
             <div className="flex gap-3">
-              <select name="priority" className={input} defaultValue="medium">
-                <option value="critical">Critical</option>
-                <option value="high">High</option>
-                <option value="medium">Medium</option>
-                <option value="low">Low</option>
-              </select>
-              <input name="due_date" type="date" className={input} />
+              <label className="flex-1 text-xs text-brand-muted">
+                Date
+                <input name="due_date" type="date" className={input} />
+              </label>
+              <label className="flex-1 text-xs text-brand-muted">
+                Time
+                <input name="due_time" type="time" className={input} />
+              </label>
             </div>
             <button type="button" onClick={() => run(addTask)} className="w-full rounded-lg bg-brand-accent py-2.5 font-semibold text-white">
               Add task
