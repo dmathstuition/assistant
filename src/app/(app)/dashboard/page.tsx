@@ -7,6 +7,7 @@ import SavingsGoals, { type GoalRow } from "@/components/SavingsGoals";
 import ExportButton from "@/components/ExportButton";
 import ImportCsv from "@/components/ImportCsv";
 import PinSettings from "@/components/PinSettings";
+import NotificationToggle from "@/components/NotificationToggle";
 import SpendingDonut, { type Slice } from "@/components/SpendingDonut";
 import TrendChart, { type MonthPoint } from "@/components/TrendChart";
 import { naira } from "@/components/Naira";
@@ -241,7 +242,10 @@ export default async function Dashboard() {
         <ImportCsv />
       </div>
 
-      <PinSettings />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <NotificationToggle />
+        <PinSettings />
+      </div>
     </div>
   );
 }
