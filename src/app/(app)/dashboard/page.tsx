@@ -4,6 +4,7 @@ import QuickAdd from "@/components/QuickAdd";
 import TaskItem from "@/components/TaskItem";
 import Budgets, { type BudgetRow } from "@/components/Budgets";
 import SavingsGoals, { type GoalRow } from "@/components/SavingsGoals";
+import ExportButton from "@/components/ExportButton";
 import { naira } from "@/components/Naira";
 
 export const dynamic = "force-dynamic";
@@ -136,6 +137,8 @@ export default async function Dashboard() {
         <Budgets budgets={budgets} />
         <SavingsGoals goals={goals} />
       </div>
+
+      <ExportButton />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { sendMail, appScriptConfigured } from "@/lib/google/appscript";
 
 // Daily Vercel Cron (see vercel.json). Finds reminders due today across ALL
 // users and emails each user their own reminders.
@@ -33,12 +34,9 @@ export async function GET(req: Request) {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const resendKey = process.env.RESEND_API_KEY;
-  if (!url || !serviceKey || !resendKey) {
+  if (!url || !serviceKey || !appScriptConfigured()) {
     return NextResponse.json({ ok: false, reason: "not configured" }, { status: 500 });
   }
-  const from =
-    process.env.REMINDERS_FROM_EMAIL || "D-Maths Assistant <onboarding@resend.dev>";
 
   // (2) Service-role client — bypasses RLS to see every user's due reminders.
   const db = createClient(url, serviceKey, { auth: { persistSession: false } });
@@ -82,21 +80,11 @@ export async function GET(req: Request) {
   for (const r of due) {
     const to = emailById.get(r.user_id);
     if (!to) continue;
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        authorization: `Bearer ${resendKey}`,
-      },
-      body: JSON.stringify({
-        from,
-        to,
-        subject: `Reminder: ${r.title}`,
-        html: `<p>This is your D-Maths reminder:</p><p><b>${escapeHtml(
-          r.title,
-        )}</b></p>`,
-      }),
-    });
+    const res = await sendMail(
+      to,
+      `Reminder: ${r.title}`,
+      `<p>This is your D-Maths reminder:</p><p><b>${escapeHtml(r.title)}</b></p>`,
+    );
     if (res.ok) {
       sent++;
       if (!r.recurring) doneIds.push(r.id);
