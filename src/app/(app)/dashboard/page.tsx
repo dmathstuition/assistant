@@ -9,6 +9,7 @@ import ImportCsv from "@/components/ImportCsv";
 import PinSettings from "@/components/PinSettings";
 import NotificationToggle from "@/components/NotificationToggle";
 import RecurringRules, { type RuleRow } from "@/components/RecurringRules";
+import InstallCard from "@/components/InstallCard";
 import SpendingDonut, { type Slice } from "@/components/SpendingDonut";
 import TrendChart, { type MonthPoint } from "@/components/TrendChart";
 import { naira } from "@/components/Naira";
@@ -214,6 +215,8 @@ export default async function Dashboard() {
           tint="text-sky-400"
         />
       </div>
+
+      <InstallCard />
 
       <CommandBox />
 
