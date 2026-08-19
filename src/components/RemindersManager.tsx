@@ -20,7 +20,7 @@ export type RuleItem = {
   id: string;
   type: string;
   category: string | null;
-  window: string | null;
+  time_window: string | null;
   threshold: number;
 };
 
@@ -32,7 +32,7 @@ function ruleText(r: RuleItem) {
   if (r.type === "balance_below")
     return `Notify when balance falls below ${naira(r.threshold)}`;
   const cat = r.category ? ` on ${r.category}` : "";
-  return `Notify when spend${cat} this ${r.window ?? "week"} exceeds ${naira(r.threshold)}`;
+  return `Notify when spend${cat} this ${r.time_window ?? "week"} exceeds ${naira(r.threshold)}`;
 }
 
 export default function RemindersManager({

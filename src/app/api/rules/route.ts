@@ -14,7 +14,7 @@ type Rule = {
   user_id: string;
   type: "spend_threshold" | "balance_below";
   category: string | null;
-  window: "day" | "week" | "month" | null;
+  time_window: "day" | "week" | "month" | null;
   threshold: number;
   last_notified_period: string | null;
 };
@@ -46,7 +46,7 @@ export async function GET(req: Request) {
 
   const { data: rules } = await db
     .from("alert_rules")
-    .select("id,user_id,type,category,window,threshold,last_notified_period")
+    .select("id,user_id,type,category,time_window,threshold,last_notified_period")
     .eq("active", true);
 
   if (!rules || rules.length === 0) return NextResponse.json({ ok: true, sent: 0 });
@@ -86,7 +86,7 @@ export async function GET(req: Request) {
   let sent = 0;
   for (const rule of rules as Rule[]) {
     if (rule.type === "spend_threshold") {
-      const window = rule.window ?? "week";
+      const window = rule.time_window ?? "week";
       const start = windowStartLocal(window, offsetMin);
       let q = db
         .from("expenses")

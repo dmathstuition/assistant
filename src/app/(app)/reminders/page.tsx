@@ -19,7 +19,7 @@ export default async function RemindersPage() {
       .limit(50),
     supabase
       .from("alert_rules")
-      .select("id,type,category,window,threshold")
+      .select("id,type,category,time_window,threshold")
       .eq("active", true)
       .order("created_at", { ascending: false }),
   ]);
