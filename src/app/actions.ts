@@ -311,6 +311,72 @@ export async function saveAssistantAction(action: AssistantAction) {
   revalidatePath("/dashboard");
 }
 
+// ---- Reminders (one-off or recurring) ----
+
+export async function addReminder(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const title = String(formData.get("title") || "").trim();
+  if (!title) throw new Error("Enter a reminder.");
+  const at = String(formData.get("remind_at") || "");
+  if (!at) throw new Error("Pick a date and time.");
+  const recurringRaw = String(formData.get("recurring") || "");
+  const recurring = ["daily", "weekly", "monthly"].includes(recurringRaw)
+    ? recurringRaw
+    : null;
+  await supabase.from("reminders").insert({
+    user_id: user.id,
+    title,
+    remind_at: new Date(at).toISOString(),
+    recurring,
+  });
+  revalidatePath("/reminders");
+  revalidatePath("/dashboard");
+}
+
+export async function deleteReminder(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("reminders").delete().eq("id", id);
+  revalidatePath("/reminders");
+  revalidatePath("/dashboard");
+}
+
+// ---- Rules-based alerts ----
+
+export async function addAlertRule(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const type = String(formData.get("type") || "");
+  const threshold = Number(formData.get("threshold"));
+  if (!threshold || threshold <= 0) throw new Error("Enter a valid amount.");
+
+  if (type === "spend_threshold") {
+    const windowRaw = String(formData.get("window") || "week");
+    const window = ["day", "week", "month"].includes(windowRaw) ? windowRaw : "week";
+    const category = String(formData.get("category") || "").trim() || null;
+    await supabase.from("alert_rules").insert({
+      user_id: user.id,
+      type,
+      category,
+      window,
+      threshold,
+    });
+  } else if (type === "balance_below") {
+    await supabase.from("alert_rules").insert({
+      user_id: user.id,
+      type,
+      threshold,
+    });
+  } else {
+    throw new Error("Unknown rule type.");
+  }
+  revalidatePath("/reminders");
+}
+
+export async function deleteAlertRule(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("alert_rules").delete().eq("id", id);
+  revalidatePath("/reminders");
+}
+
 // ---- Recurring rules (auto-logged transactions like rent/salary) ----
 
 export async function addRecurringRule(formData: FormData) {

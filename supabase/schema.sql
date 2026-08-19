@@ -290,3 +290,32 @@ alter table public.tasks
 alter table public.income add column if not exists category text;
 alter table public.income add column if not exists account text;
 alter table public.income add column if not exists notes text;
+
+-- =====================================================================
+--  MIGRATION: ALERT RULES (added after Phase 1)
+--  Paste this block on its own into Supabase → SQL Editor → Run.
+--  User-defined notification rules the /api/rules cron evaluates:
+--   - spend_threshold: notify when spend (optionally in one category) over a
+--     day/week/month exceeds `threshold`.
+--   - balance_below: notify when running balance (all income − all expenses)
+--     falls below `threshold`.
+--  last_notified_period de-duplicates so each crossing notifies once.
+-- =====================================================================
+create table if not exists public.alert_rules (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  type text not null check (type in ('spend_threshold','balance_below')),
+  category text,                                   -- spend_threshold, null = all
+  window text check (window in ('day','week','month')),
+  threshold numeric(14,2) not null check (threshold >= 0),
+  active boolean not null default true,
+  last_notified_period text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_alert_rules_user on public.alert_rules(user_id);
+
+alter table public.alert_rules enable row level security;
+
+drop policy if exists "own alert_rules" on public.alert_rules;
+create policy "own alert_rules" on public.alert_rules for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
