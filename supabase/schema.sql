@@ -319,3 +319,37 @@ alter table public.alert_rules enable row level security;
 
 drop policy if exists "own alert_rules" on public.alert_rules;
 create policy "own alert_rules" on public.alert_rules for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- =====================================================================
+--  MIGRATION: BANK LINKING (Mono) (added after Phase 1)
+--  Paste this block on its own into Supabase → SQL Editor → Run.
+--  linked_accounts holds each Mono-connected bank account. Imported bank
+--  transactions become expenses tagged source='bank' with an external_id
+--  (the Mono transaction id) so re-imports never duplicate.
+-- =====================================================================
+create table if not exists public.linked_accounts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  mono_account_id text not null unique,
+  institution text,
+  account_name text,
+  mask text,
+  currency text not null default 'NGN',
+  last_synced_at timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_linked_accounts_user on public.linked_accounts(user_id);
+
+alter table public.linked_accounts enable row level security;
+
+drop policy if exists "own linked_accounts" on public.linked_accounts;
+create policy "own linked_accounts" on public.linked_accounts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Allow bank-sourced expenses and give them a dedupe key.
+alter table public.expenses drop constraint if exists expenses_source_check;
+alter table public.expenses
+  add constraint expenses_source_check check (source in ('manual','voice','ai','bank'));
+alter table public.expenses add column if not exists external_id text;
+create unique index if not exists uq_expenses_external
+  on public.expenses(user_id, external_id) where external_id is not null;

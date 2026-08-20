@@ -55,6 +55,9 @@ hosts it, Supabase is the database.
 | `APPSCRIPT_WEBHOOK_URL` | `google-appscript/README.md` | no | Gmail / Sheets / Drive |
 | `APPSCRIPT_SHARED_SECRET` | you invent a long random string | **yes** | Apps Script bridge |
 | `ALARM_TZ_OFFSET` | optional, minutes east of UTC (default `60` = WAT) | no | scheduled task alarms |
+| `MONO_SECRET_KEY` | mono.co dashboard | **yes** | bank linking (see docs/BANK-LINKING.md) |
+| `NEXT_PUBLIC_MONO_PUBLIC_KEY` | mono.co dashboard | no | bank-connect widget |
+| `MONO_WEBHOOK_SECRET` | you set it (also in Mono dashboard) | **yes** | bank transaction webhook |
 
 ## 4. Push notifications (VAPID keys)
 
