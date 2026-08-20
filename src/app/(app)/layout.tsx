@@ -6,6 +6,7 @@ import AppLock from "@/components/AppLock";
 import InstallButton from "@/components/InstallButton";
 import TaskAlarms from "@/components/TaskAlarms";
 import ToastProvider from "@/components/ToastProvider";
+import OfflineSync from "@/components/OfflineSync";
 import {
   WalletIcon,
   ChecklistIcon,
@@ -103,6 +104,7 @@ export default async function AppLayout({
         </nav>
 
         <TaskAlarms />
+        <OfflineSync />
       </div>
       </ToastProvider>
     </AppLock>

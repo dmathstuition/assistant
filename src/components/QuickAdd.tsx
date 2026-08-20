@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { addExpense, addIncome, addTask } from "@/app/actions";
+import { enqueue } from "@/lib/offlineQueue";
 
 const EXPENSE_CATEGORIES = [
   "Food",
@@ -65,13 +66,35 @@ export default function QuickAdd({
   const catOptions = Array.from(new Set([...categories, ...EXPENSE_CATEGORIES]));
 
   async function run(
+    type: "expense" | "income" | "task",
     fn: (fd: FormData) => Promise<void>,
     after?: () => void,
   ) {
     if (!formRef.current) return;
     setNote("");
+    const fd = new FormData(formRef.current);
+
+    // Light client-side validation so we never queue junk.
+    if ((type === "expense" || type === "income") && !(Number(fd.get("amount")) > 0)) {
+      setNote("Enter a valid amount.");
+      return;
+    }
+    if (type === "task" && !String(fd.get("title") || "").trim()) {
+      setNote("Enter a task title.");
+      return;
+    }
+
+    // Offline: stash it and let OfflineSync flush it when the connection returns.
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      enqueue({ type, data: Object.fromEntries(fd.entries()) as Record<string, string> });
+      setAmount("");
+      setNote("Saved offline — will sync when you're back online ✓");
+      after?.();
+      return;
+    }
+
     try {
-      await fn(new FormData(formRef.current));
+      await fn(fd);
       setAmount("");
       setNote("Saved ✓");
       after?.();
@@ -142,7 +165,7 @@ export default function QuickAdd({
             <button
               type="button"
               onClick={() =>
-                run(addExpense, () => localStorage.setItem("qa_last_cat", category))
+                run("expense", addExpense, () => localStorage.setItem("qa_last_cat", category))
               }
               className="btn-accent w-full rounded-lg py-2.5 font-semibold text-white"
             >
@@ -175,7 +198,7 @@ export default function QuickAdd({
             <button
               type="button"
               onClick={() =>
-                run(addIncome, () => localStorage.setItem("qa_last_source", source))
+                run("income", addIncome, () => localStorage.setItem("qa_last_source", source))
               }
               className="btn-accent w-full rounded-lg py-2.5 font-semibold text-white"
             >
@@ -205,7 +228,7 @@ export default function QuickAdd({
             </div>
             <button
               type="button"
-              onClick={() => run(addTask, () => formRef.current?.reset())}
+              onClick={() => run("task", addTask, () => formRef.current?.reset())}
               className="btn-accent w-full rounded-lg py-2.5 font-semibold text-white"
             >
               Add task
