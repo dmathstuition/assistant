@@ -67,19 +67,19 @@ export default function InstallCard() {
             <p className="mt-3 text-sm text-amber-300">
               You&apos;re in an in-app browser (like Telegram) that can&apos;t install
               apps. Tap the ⋮ menu and choose{" "}
-              <b className="text-white">Open in Chrome</b> (or your browser), then
+              <b className="text-brand-fg">Open in Chrome</b> (or your browser), then
               install from there.
             </p>
           ) : isIOS ? (
             <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-brand-muted">
               <li>
-                Tap the <b className="text-white">Share</b> icon in Safari.
+                Tap the <b className="text-brand-fg">Share</b> icon in Safari.
               </li>
               <li>
-                Choose <b className="text-white">Add to Home Screen</b>.
+                Choose <b className="text-brand-fg">Add to Home Screen</b>.
               </li>
               <li>
-                Tap <b className="text-white">Add</b> — D-Maths appears on your home
+                Tap <b className="text-brand-fg">Add</b> — D-Maths appears on your home
                 screen.
               </li>
             </ol>
@@ -100,8 +100,8 @@ export default function InstallCard() {
           ) : (
             <p className="mt-3 text-sm text-brand-muted">
               In your browser menu (⋮), choose{" "}
-              <b className="text-white">Install app</b> or{" "}
-              <b className="text-white">Add to Home screen</b>.
+              <b className="text-brand-fg">Install app</b> or{" "}
+              <b className="text-brand-fg">Add to Home screen</b>.
             </p>
           )}
         </div>

@@ -155,7 +155,7 @@ export default function TaskCard({ task }: { task: FullTask }) {
           <option value="completed">Completed</option>
           <option value="cancelled">Cancelled</option>
         </select>
-        <button onClick={() => setEditing(true)} title="Edit" className="p-1 text-brand-muted hover:text-white">
+        <button onClick={() => setEditing(true)} title="Edit" className="p-1 text-brand-muted hover:text-brand-fg">
           <PencilIcon className="text-sm" />
         </button>
         <button onClick={remove} disabled={busy} title="Delete" className="p-1 text-brand-muted hover:text-red-400">

@@ -5,13 +5,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Driven by CSS variables (see globals.css) so the whole palette
+        // swaps between dark and light themes from one place.
         brand: {
-          bg: "#0A1628",       // D-Maths deep blue
-          card: "#0f1f38",
-          border: "#1c3050",
-          accent: "#FF6B2B",   // D-Maths orange
-          accent2: "#F97316",
-          muted: "#93a4c3",
+          bg: "rgb(var(--brand-bg) / <alpha-value>)",
+          card: "rgb(var(--brand-card) / <alpha-value>)",
+          border: "rgb(var(--brand-border) / <alpha-value>)",
+          accent: "rgb(var(--brand-accent) / <alpha-value>)",
+          accent2: "rgb(var(--brand-accent2) / <alpha-value>)",
+          muted: "rgb(var(--brand-muted) / <alpha-value>)",
+          fg: "rgb(var(--brand-fg) / <alpha-value>)",
         },
       },
     },

@@ -129,7 +129,7 @@ export default function CommandBox() {
               setText(s);
               ask(s);
             }}
-            className="rounded-full border border-brand-border px-3 py-1 text-xs text-brand-muted hover:text-white"
+            className="rounded-full border border-brand-border px-3 py-1 text-xs text-brand-muted hover:text-brand-fg"
           >
             {s}
           </button>

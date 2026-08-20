@@ -30,7 +30,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Apply the saved (or system) theme before first paint to avoid a flash. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}if(t==='light'){document.documentElement.setAttribute('data-theme','light');var m=document.querySelector('meta[name=\\"theme-color\\"]');if(m)m.setAttribute('content','#eef3fb');}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="min-h-screen antialiased">
         {children}
         <PWARegister />

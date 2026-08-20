@@ -4,17 +4,70 @@
 
 :root {
   color-scheme: dark;
+
+  /* Brand palette as "R G B" channel triples — Tailwind reads them via
+     rgb(var(--brand-x) / <alpha-value>), so a single swap re-themes the app. */
+  --brand-bg: 10 22 40;        /* #0A1628 */
+  --brand-card: 15 31 56;      /* #0f1f38 */
+  --brand-border: 28 48 80;    /* #1c3050 */
+  --brand-accent: 255 107 43;  /* #FF6B2B */
+  --brand-accent2: 249 115 22; /* #F97316 */
+  --brand-muted: 147 164 195;  /* #93a4c3 */
+  --brand-fg: 232 238 252;     /* #e8eefc — primary text */
+
+  /* Semantic surfaces used by globals.css + the app chrome. */
+  --page-bg: #060d1a;
+  --glass-card: rgba(18, 32, 56, 0.55);
+  --glass-well: rgba(8, 16, 32, 0.55);
+  --hairline: rgba(255, 255, 255, 0.08);
+  --hairline-strong: rgba(255, 255, 255, 0.12);
+  --card-shadow: 0 8px 32px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --ghost-bg: rgba(255, 255, 255, 0.05);
+  --ghost-bg-hover: rgba(255, 255, 255, 0.1);
+  --ghost-border: rgba(255, 255, 255, 0.1);
+  --header-bg: rgba(8, 14, 26, 0.6);
+  --nav-bg: rgba(8, 14, 26, 0.85);
+  --field-1: rgba(255, 107, 43, 0.18);
+  --field-2: rgba(37, 99, 235, 0.22);
+  --field-3: rgba(16, 185, 129, 0.12);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+
+  --brand-bg: 237 242 250;     /* soft blue-grey page */
+  --brand-card: 255 255 255;
+  --brand-border: 209 220 236;
+  --brand-accent: 234 88 12;   /* deeper orange for contrast on white */
+  --brand-accent2: 249 115 22;
+  --brand-muted: 90 106 133;
+  --brand-fg: 15 27 45;        /* near-navy ink */
+
+  --page-bg: #eef3fb;
+  --glass-card: rgba(255, 255, 255, 0.72);
+  --glass-well: rgba(15, 27, 45, 0.04);
+  --hairline: rgba(15, 27, 45, 0.1);
+  --hairline-strong: rgba(15, 27, 45, 0.14);
+  --card-shadow: 0 8px 30px rgba(15, 27, 45, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --ghost-bg: rgba(15, 27, 45, 0.04);
+  --ghost-bg-hover: rgba(15, 27, 45, 0.08);
+  --ghost-border: rgba(15, 27, 45, 0.1);
+  --header-bg: rgba(255, 255, 255, 0.72);
+  --nav-bg: rgba(255, 255, 255, 0.9);
+  --field-1: rgba(255, 107, 43, 0.12);
+  --field-2: rgba(37, 99, 235, 0.1);
+  --field-3: rgba(16, 185, 129, 0.09);
 }
 
 body {
   min-height: 100vh;
-  color: #e8eefc;
-  background-color: #060d1a;
+  color: rgb(var(--brand-fg));
+  background-color: var(--page-bg);
   /* Ambient colour field the glass panels blur over. */
   background-image:
-    radial-gradient(60rem 60rem at 85% -10%, rgba(255, 107, 43, 0.18), transparent 60%),
-    radial-gradient(55rem 55rem at -10% 20%, rgba(37, 99, 235, 0.22), transparent 55%),
-    radial-gradient(45rem 45rem at 50% 120%, rgba(16, 185, 129, 0.12), transparent 60%);
+    radial-gradient(60rem 60rem at 85% -10%, var(--field-1), transparent 60%),
+    radial-gradient(55rem 55rem at -10% 20%, var(--field-2), transparent 55%),
+    radial-gradient(45rem 45rem at 50% 120%, var(--field-3), transparent 60%);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
 }
@@ -22,25 +75,24 @@ body {
 @layer components {
   /* Glassmorphism panel. */
   .card {
-    background: rgba(18, 32, 56, 0.55);
+    background: var(--glass-card);
     backdrop-filter: blur(18px) saturate(140%);
     -webkit-backdrop-filter: blur(18px) saturate(140%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--hairline);
     border-radius: 20px;
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.28),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    box-shadow: var(--card-shadow);
   }
 
   /* A quieter inner surface (inputs, wells) that still reads on glass. */
   .well {
-    background: rgba(8, 16, 32, 0.55);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--glass-well);
+    border: 1px solid var(--hairline);
   }
 
   /* Primary action: gradient with a soft glow. */
   .btn-accent {
     background: linear-gradient(135deg, #ff6b2b, #f97316);
+    color: #fff;
     box-shadow: 0 6px 18px rgba(255, 107, 43, 0.35);
     transition: filter 0.15s ease, transform 0.05s ease;
   }
@@ -52,11 +104,11 @@ body {
   }
 
   .btn-ghost {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--ghost-bg);
+    border: 1px solid var(--ghost-border);
     transition: background 0.15s ease;
   }
   .btn-ghost:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--ghost-bg-hover);
   }
 }

@@ -83,12 +83,12 @@ export default function GuidePage() {
 
       <div className="card p-5">
         <p className="text-sm text-brand-muted">
-          Type into <b className="text-white">Ask your assistant</b> on the
+          Type into <b className="text-brand-fg">Ask your assistant</b> on the
           dashboard, or tap the 🎤 mic and speak. Write the way you&apos;d text a
           friend — the assistant reads your sentence and proposes an action.
-          Anything that <b className="text-white">saves</b> money, a task, a budget
+          Anything that <b className="text-brand-fg">saves</b> money, a task, a budget
           or a goal shows a preview first, so nothing is stored until you tap{" "}
-          <b className="text-white">Save</b>. It will never make up a number.
+          <b className="text-brand-fg">Save</b>. It will never make up a number.
         </p>
       </div>
 
@@ -120,21 +120,21 @@ export default function GuidePage() {
         <div className="mb-2 font-semibold">Tips</div>
         <ul className="list-disc space-y-1.5 pl-5 text-sm text-brand-muted">
           <li>
-            Amounts: <b className="text-white">8,500</b>, <b className="text-white">₦8,500</b>,
-            and <b className="text-white">8.5k</b> all work.
+            Amounts: <b className="text-brand-fg">8,500</b>, <b className="text-brand-fg">₦8,500</b>,
+            and <b className="text-brand-fg">8.5k</b> all work.
           </li>
           <li>Say a category (food, transport, rent) and it files it correctly.</li>
           <li>
-            For alarms, give a task a <b className="text-white">time</b> — you&apos;ll
+            For alarms, give a task a <b className="text-brand-fg">time</b> — you&apos;ll
             get a beep and pop-up at the time, plus 10 minutes before.
           </li>
           <li>
-            Turn on <b className="text-white">Push notifications</b> (dashboard) so
+            Turn on <b className="text-brand-fg">Push notifications</b> (dashboard) so
             reminders reach your phone even when the app is closed.
           </li>
           <li>
-            Browse and edit anything later on <b className="text-white">History</b>;
-            plan ahead on <b className="text-white">Planner</b>.
+            Browse and edit anything later on <b className="text-brand-fg">History</b>;
+            plan ahead on <b className="text-brand-fg">Planner</b>.
           </li>
         </ul>
       </div>
