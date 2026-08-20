@@ -180,6 +180,14 @@ export const DownloadAppIcon = (p: IconProps) => (
   </Base>
 );
 
+export const ReportIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M6 3h9l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+    <path d="M14 3v5h5" />
+    <path d="M8 13h8M8 17h6" />
+  </Base>
+);
+
 export const SearchIcon = (p: IconProps) => (
   <Base {...p}>
     <circle cx="11" cy="11" r="7" />
