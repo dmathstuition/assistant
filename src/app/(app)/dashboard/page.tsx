@@ -24,6 +24,8 @@ import {
   ListIcon,
   PlusIcon,
   PiggyIcon,
+  GaugeIcon,
+  SearchIcon,
 } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
@@ -295,8 +297,11 @@ export default async function Dashboard() {
         <QuickAction href="/analytics" label="Stats">
           <TrendingUpIcon />
         </QuickAction>
-        <QuickAction href="/history" label="History">
-          <ListIcon />
+        <QuickAction href="/insights" label="Insights">
+          <GaugeIcon />
+        </QuickAction>
+        <QuickAction href="/search" label="Search">
+          <SearchIcon />
         </QuickAction>
         <QuickAction href="/reminders" label="Alerts">
           <BellIcon />
