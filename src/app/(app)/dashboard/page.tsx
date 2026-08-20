@@ -310,6 +310,9 @@ export default async function Dashboard() {
         <QuickAction href="/reminders" label="Alerts">
           <BellIcon />
         </QuickAction>
+        <QuickAction href="/accounts" label="Bank">
+          <WalletIcon />
+        </QuickAction>
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">

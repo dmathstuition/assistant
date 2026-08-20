@@ -393,6 +393,14 @@ export async function deleteAlertRule(id: string) {
   revalidatePath("/reminders");
 }
 
+// ---- Linked bank accounts (Mono) ----
+
+export async function unlinkAccount(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("linked_accounts").delete().eq("id", id);
+  revalidatePath("/accounts");
+}
+
 // ---- Recurring rules (auto-logged transactions like rent/salary) ----
 
 export async function addRecurringRule(formData: FormData) {
