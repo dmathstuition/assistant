@@ -29,7 +29,7 @@ export default function ReportControls() {
           className={`rounded-full px-3 py-1.5 text-xs transition ${
             current === p.key
               ? "btn-accent text-white"
-              : "border border-white/10 bg-white/5 text-brand-muted hover:text-white"
+              : "border border-brand-border bg-brand-fg/5 text-brand-muted hover:text-brand-fg"
           }`}
         >
           {p.label}

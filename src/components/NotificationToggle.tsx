@@ -102,7 +102,7 @@ export default function NotificationToggle() {
             onClick={on ? disable : enable}
             disabled={busy}
             className={`rounded-lg px-4 py-2 text-sm font-semibold disabled:opacity-60 ${
-              on ? "btn-ghost text-white" : "btn-accent text-white"
+              on ? "btn-ghost text-brand-fg" : "btn-accent text-white"
             }`}
           >
             {busy ? "…" : on ? "Turn off" : "Enable notifications"}

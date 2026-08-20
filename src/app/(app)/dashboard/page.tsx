@@ -487,7 +487,7 @@ function QuickAction({
   return (
     <Link
       href={href}
-      className="btn-ghost flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-brand-muted hover:text-white"
+      className="btn-ghost flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm text-brand-muted hover:text-brand-fg"
     >
       <span className="text-base text-brand-accent">{children}</span>
       {label}

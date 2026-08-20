@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import SignOutButton from "@/components/SignOutButton";
 import AppLock from "@/components/AppLock";
+import ThemeToggle from "@/components/ThemeToggle";
 import InstallButton from "@/components/InstallButton";
 import TaskAlarms from "@/components/TaskAlarms";
 import ToastProvider from "@/components/ToastProvider";
@@ -46,7 +47,7 @@ export default async function AppLayout({
     <AppLock>
       <ToastProvider>
       <div className="min-h-screen pb-20 sm:pb-0">
-        <header className="sticky top-0 z-20 border-b border-white/10 bg-[rgba(8,14,26,0.6)] backdrop-blur-xl">
+        <header className="sticky top-0 z-20 border-b border-[var(--hairline-strong)] bg-[var(--header-bg)] backdrop-blur-xl">
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3">
             <Link href="/dashboard" className="flex items-center gap-2">
               <span className="btn-accent flex h-8 w-8 items-center justify-center rounded-xl text-lg text-white">
@@ -62,7 +63,7 @@ export default async function AppLayout({
                 <Link
                   key={href}
                   href={href}
-                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-brand-muted transition hover:bg-white/5 hover:text-white"
+                  className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-brand-muted transition hover:bg-brand-fg/5 hover:text-brand-fg"
                 >
                   <Icon className="text-base" />
                   {label}
@@ -74,10 +75,11 @@ export default async function AppLayout({
               <Link
                 href="/search"
                 title="Search"
-                className="btn-ghost flex h-8 w-8 items-center justify-center rounded-lg text-base text-brand-muted hover:text-white"
+                className="btn-ghost flex h-8 w-8 items-center justify-center rounded-lg text-base text-brand-muted hover:text-brand-fg"
               >
                 <SearchIcon />
               </Link>
+              <ThemeToggle />
               <InstallButton />
               <span className="hidden text-sm text-brand-muted lg:inline">
                 {user.email}
@@ -90,12 +92,12 @@ export default async function AppLayout({
         <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
 
         {/* App-like bottom tab bar on phones. */}
-        <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-white/10 bg-[rgba(8,14,26,0.85)] backdrop-blur-xl md:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-30 flex border-t border-[var(--hairline-strong)] bg-[var(--nav-bg)] backdrop-blur-xl md:hidden">
           {MOBILE_NAV.map(({ href, label, Icon }) => (
             <Link
               key={href}
               href={href}
-              className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] text-brand-muted transition hover:text-white"
+              className="flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px] text-brand-muted transition hover:text-brand-fg"
             >
               <Icon className="text-lg" />
               {label}

@@ -109,7 +109,7 @@ export default function TransactionRow({ txn }: { txn: Txn }) {
         {naira(txn.amount)}
       </div>
       <div className="flex items-center gap-1 opacity-60 transition group-hover:opacity-100">
-        <button onClick={() => setEditing(true)} title="Edit" className="p-1 hover:text-white">
+        <button onClick={() => setEditing(true)} title="Edit" className="p-1 hover:text-brand-fg">
           <PencilIcon className="text-sm" />
         </button>
         <button onClick={remove} disabled={busy} title="Delete" className="p-1 hover:text-red-400">

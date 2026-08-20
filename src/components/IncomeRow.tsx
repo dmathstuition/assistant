@@ -71,7 +71,7 @@ export default function IncomeRow({ entry }: { entry: IncomeEntry }) {
         +{naira(entry.amount)}
       </div>
       <div className="flex items-center gap-1">
-        <button onClick={() => setEditing(true)} title="Edit" className="p-1 text-brand-muted hover:text-white">
+        <button onClick={() => setEditing(true)} title="Edit" className="p-1 text-brand-muted hover:text-brand-fg">
           <PencilIcon className="text-sm" />
         </button>
         <button onClick={remove} title="Delete" className="p-1 text-brand-muted hover:text-red-400">
