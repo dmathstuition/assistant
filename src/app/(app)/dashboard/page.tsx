@@ -26,6 +26,7 @@ import {
   PiggyIcon,
   GaugeIcon,
   SearchIcon,
+  ReportIcon,
 } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
@@ -299,6 +300,9 @@ export default async function Dashboard() {
         </QuickAction>
         <QuickAction href="/insights" label="Insights">
           <GaugeIcon />
+        </QuickAction>
+        <QuickAction href="/report" label="Report">
+          <ReportIcon />
         </QuickAction>
         <QuickAction href="/search" label="Search">
           <SearchIcon />
