@@ -14,6 +14,8 @@ import {
   SparklesIcon,
   TrendingUpIcon,
   IncomeIcon,
+  SearchIcon,
+  GaugeIcon,
 } from "@/components/icons";
 
 const NAV = [
@@ -21,6 +23,7 @@ const NAV = [
   { href: "/planner", label: "Planner", Icon: CalendarIcon },
   { href: "/income", label: "Income", Icon: IncomeIcon },
   { href: "/analytics", label: "Stats", Icon: TrendingUpIcon },
+  { href: "/insights", label: "Insights", Icon: GaugeIcon },
   { href: "/history", label: "History", Icon: ListIcon },
   { href: "/guide", label: "Guide", Icon: SparklesIcon },
 ];
@@ -67,6 +70,13 @@ export default async function AppLayout({
             </nav>
 
             <div className="flex items-center gap-2">
+              <Link
+                href="/search"
+                title="Search"
+                className="btn-ghost flex h-8 w-8 items-center justify-center rounded-lg text-base text-brand-muted hover:text-white"
+              >
+                <SearchIcon />
+              </Link>
               <InstallButton />
               <span className="hidden text-sm text-brand-muted lg:inline">
                 {user.email}

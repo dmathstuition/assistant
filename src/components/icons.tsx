@@ -180,6 +180,21 @@ export const DownloadAppIcon = (p: IconProps) => (
   </Base>
 );
 
+export const SearchIcon = (p: IconProps) => (
+  <Base {...p}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M21 21l-4.3-4.3" />
+  </Base>
+);
+
+export const GaugeIcon = (p: IconProps) => (
+  <Base {...p}>
+    <path d="M12 13l4-3" />
+    <path d="M4 18a8 8 0 1 1 16 0" />
+    <circle cx="12" cy="13" r="1" />
+  </Base>
+);
+
 export const LogoutIcon = (p: IconProps) => (
   <Base {...p}>
     <path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3" />
