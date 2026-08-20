@@ -15,6 +15,11 @@ export const metadata: Metadata = {
     icon: "/icon-192.png",
     apple: "/apple-touch-icon.png",
   },
+  // Next emits the Apple-prefixed flag from appleWebApp; add the modern
+  // standard name too so Chrome/Android treats it as an installable web app.
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export const viewport: Viewport = {
