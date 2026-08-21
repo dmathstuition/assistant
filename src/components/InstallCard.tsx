@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { DownloadAppIcon } from "@/components/icons";
+import InstallDiagnostics from "@/components/InstallDiagnostics";
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;
@@ -34,15 +35,24 @@ export default function InstallCard() {
     // install PWAs — the user must open the site in a real browser first.
     setInApp(/Telegram|FBAN|FBAV|Instagram|Line\/|MicroMessenger|; wv\)/i.test(ua));
 
+    const w = window as unknown as { __bipEvent?: BeforeInstallPromptEvent | null };
+    // Adopt the prompt event if it already fired before this mounted.
+    const adopt = () => {
+      if (w.__bipEvent) setDeferred(w.__bipEvent);
+    };
+    adopt();
     const onPrompt = (e: Event) => {
       e.preventDefault();
+      w.__bipEvent = e as BeforeInstallPromptEvent;
       setDeferred(e as BeforeInstallPromptEvent);
     };
     const onInstalled = () => setInstalled(true);
     window.addEventListener("beforeinstallprompt", onPrompt);
+    window.addEventListener("bip-ready", adopt);
     window.addEventListener("appinstalled", onInstalled);
     return () => {
       window.removeEventListener("beforeinstallprompt", onPrompt);
+      window.removeEventListener("bip-ready", adopt);
       window.removeEventListener("appinstalled", onInstalled);
     };
   }, []);
@@ -104,6 +114,8 @@ export default function InstallCard() {
               <b className="text-brand-fg">Add to Home screen</b>.
             </p>
           )}
+
+          <InstallDiagnostics />
         </div>
       </div>
     </div>

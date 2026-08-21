@@ -43,6 +43,14 @@ export default function RootLayout({
             __html: `(function(){try{var t=localStorage.getItem('theme');if(!t){t=window.matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';}if(t==='light'){document.documentElement.setAttribute('data-theme','light');var m=document.querySelector('meta[name=\\"theme-color\\"]');if(m)m.setAttribute('content','#eef3fb');}}catch(e){}})();`,
           }}
         />
+        {/* Capture Chrome's install prompt as early as possible. It fires once
+            and often before React mounts, so we stash it on window and notify
+            the Install button, which may attach its listener later. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__bipEvent=e;window.dispatchEvent(new Event('bip-ready'));});window.addEventListener('appinstalled',function(){window.__bipEvent=null;});})();`,
+          }}
+        />
       </head>
       <body className="min-h-screen antialiased">
         {children}
