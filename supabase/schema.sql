@@ -376,3 +376,14 @@ alter table public.debts enable row level security;
 
 drop policy if exists "own debts" on public.debts;
 create policy "own debts" on public.debts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- Email-import dedupe: give income an external_id (bank alert message id),
+-- mirroring the one on expenses. Re-importing the same alert never doubles.
+alter table public.income add column if not exists external_id text;
+create unique index if not exists uq_income_external
+  on public.income(user_id, external_id) where external_id is not null;
+
+-- Allow bank-sourced income (from the email importer), like expenses.
+alter table public.income drop constraint if exists income_source_check;
+alter table public.income
+  add constraint income_source_check check (source in ('manual','voice','ai','bank'));

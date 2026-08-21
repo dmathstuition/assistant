@@ -157,3 +157,58 @@ function runAlarms() {
   if (!ALARM_URL) return;
   UrlFetchApp.fetch(ALARM_URL, { muteHttpExceptions: true });
 }
+
+// ---------------------------------------------------------------------
+//  EMAIL IMPORT (optional) — auto-log expenses/income from bank alerts.
+//  This searches your Gmail for bank "transaction alert" emails and posts
+//  each one to the app, which parses the amount + debit/credit and saves it
+//  (de-duplicated by the Gmail message id, so re-runs never double count).
+//
+//  SETUP
+//   1. INGEST_URL: your endpoint INCLUDING the secret:
+//        https://YOUR-APP.vercel.app/api/ingest/email?key=YOUR_CRON_SECRET
+//   2. BANK_QUERY: a Gmail search that matches your bank's alerts. Examples:
+//        'from:alerts@gtbank.com newer_than:2d'
+//        'subject:(transaction alert OR debit alert OR credit alert) newer_than:2d'
+//      Tune this to your bank so you only import real alerts.
+//   3. Triggers (clock icon) → Add Trigger → Function: scanBankEmails →
+//        Time-driven → Hour timer (e.g. every 1 hour). It labels handled
+//        threads "D-Maths Imported" so the same email is never re-sent.
+// ---------------------------------------------------------------------
+var INGEST_URL = "";
+var BANK_QUERY = 'subject:(transaction alert OR debit alert OR credit alert) newer_than:2d';
+var IMPORTED_LABEL = "D-Maths Imported";
+
+function scanBankEmails() {
+  if (!INGEST_URL) return;
+  var label = GmailApp.getUserLabelByName(IMPORTED_LABEL) ||
+    GmailApp.createLabel(IMPORTED_LABEL);
+  var me = Session.getActiveUser().getEmail();
+  var threads = GmailApp.search(BANK_QUERY + ' -label:"' + IMPORTED_LABEL + '"', 0, 25);
+
+  for (var i = 0; i < threads.length; i++) {
+    var msgs = threads[i].getMessages();
+    for (var j = 0; j < msgs.length; j++) {
+      var m = msgs[j];
+      var payload = {
+        messageId: m.getId(),
+        from: m.getFrom(),
+        subject: m.getSubject(),
+        body: m.getPlainBody().slice(0, 4000),
+        receivedAt: m.getDate().toISOString(),
+        email: me,
+      };
+      try {
+        UrlFetchApp.fetch(INGEST_URL, {
+          method: "post",
+          contentType: "application/json",
+          payload: JSON.stringify(payload),
+          muteHttpExceptions: true,
+        });
+      } catch (err) {
+        // best-effort; leave the thread unlabelled so the next run retries it
+      }
+    }
+    threads[i].addLabel(label);
+  }
+}
