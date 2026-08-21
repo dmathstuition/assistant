@@ -203,6 +203,14 @@ export const GaugeIcon = (p: IconProps) => (
   </Base>
 );
 
+export const DebtIcon = (p: IconProps) => (
+  <Base {...p}>
+    <rect x="2.5" y="6" width="19" height="13" rx="2.5" />
+    <path d="M2.5 10h19" />
+    <path d="M6.5 15h4" />
+  </Base>
+);
+
 export const SunIcon = (p: IconProps) => (
   <Base {...p}>
     <circle cx="12" cy="12" r="4" />
