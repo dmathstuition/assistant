@@ -10,6 +10,7 @@ type Check = { label: string; ok: boolean | null; hint: string };
 export default function InstallDiagnostics() {
   const [open, setOpen] = useState(false);
   const [checks, setChecks] = useState<Check[]>([]);
+  const [env, setEnv] = useState<{ browser: string; ua: string } | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -18,6 +19,29 @@ export default function InstallDiagnostics() {
     (async () => {
       const w = window as unknown as { __bipEvent?: unknown };
       const results: Check[] = [];
+
+      // Identify the browser/engine — a real install (WebAPK, own app icon,
+      // shows in the app drawer) needs Chrome or Samsung Internet. In-app
+      // browsers and some Chrome clones can only make a home-screen shortcut.
+      const ua = navigator.userAgent;
+      const isWebView = /(FBAN|FBAV|Instagram|Telegram|Line\/|MicroMessenger|; wv\))/i.test(ua);
+      let browser = "Other browser";
+      if (isWebView) browser = "In-app browser (can't install apps)";
+      else if (/SamsungBrowser/i.test(ua)) browser = "Samsung Internet";
+      else if (/EdgA?\//i.test(ua)) browser = "Microsoft Edge";
+      else if (/OPR\/|Opera/i.test(ua)) browser = "Opera";
+      else if (/Firefox|FxiOS/i.test(ua)) browser = "Firefox";
+      else if (/CriOS/i.test(ua)) browser = "Chrome on iPhone (use Safari instead)";
+      else if (/Chrome\//i.test(ua)) browser = "Chrome";
+      setEnv({ browser, ua });
+
+      results.push({
+        label: "Supported browser (Chrome)",
+        ok: browser === "Chrome" || browser === "Samsung Internet",
+        hint: isWebView
+          ? "You opened this inside another app. Tap ⋮ → Open in Chrome, then install from there."
+          : "Open the site in Chrome (Android) to get a real app install.",
+      });
 
       results.push({
         label: "Secure connection (HTTPS)",
@@ -97,6 +121,12 @@ export default function InstallDiagnostics() {
 
       {open && (
         <div className="mt-2 space-y-1.5 rounded-lg border border-brand-border bg-brand-fg/5 p-3 text-xs">
+          {env && (
+            <div className="mb-1 border-b border-brand-border pb-2">
+              <div className="font-medium">Browser: {env.browser}</div>
+              <div className="mt-1 break-all text-[10px] text-brand-muted">{env.ua}</div>
+            </div>
+          )}
           {checks.length === 0 ? (
             <p className="text-brand-muted">Checking…</p>
           ) : (
