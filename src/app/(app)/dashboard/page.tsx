@@ -10,7 +10,7 @@ import ImportCsv from "@/components/ImportCsv";
 import PinSettings from "@/components/PinSettings";
 import NotificationToggle from "@/components/NotificationToggle";
 import RecurringRules, { type RuleRow } from "@/components/RecurringRules";
-import InstallCard from "@/components/InstallCard";
+import DownloadAppButton from "@/components/DownloadAppButton";
 import SpendingDonut, { type Slice } from "@/components/SpendingDonut";
 import TrendChart, { type MonthPoint } from "@/components/TrendChart";
 import { naira } from "@/components/Naira";
@@ -258,6 +258,8 @@ export default async function Dashboard() {
         </p>
       </div>
 
+      <DownloadAppButton />
+
       {/* Daily brief */}
       <div className="card p-4 text-sm">
         <span className="text-brand-muted">Here&apos;s your day — </span>
@@ -327,8 +329,6 @@ export default async function Dashboard() {
         />
         <Stat label="Saved" value={naira(savedTotal)} icon={<PiggyIcon />} tint="text-sky-400" />
       </div>
-
-      <InstallCard />
 
       {/* Today + reminders/alerts */}
       <div className="grid gap-6 lg:grid-cols-2">
