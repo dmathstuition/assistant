@@ -319,6 +319,12 @@ export default async function Dashboard() {
         <QuickAction href="/debts" label="Debts">
           <DebtIcon />
         </QuickAction>
+        <QuickAction href="/calendar" label="Calendar">
+          <CalendarIcon />
+        </QuickAction>
+        <QuickAction href="/forecast" label="Forecast">
+          <TrendingUpIcon />
+        </QuickAction>
       </div>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
