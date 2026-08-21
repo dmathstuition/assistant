@@ -18,12 +18,14 @@ import {
   IncomeIcon,
   SearchIcon,
   GaugeIcon,
+  DebtIcon,
 } from "@/components/icons";
 
 const NAV = [
   { href: "/dashboard", label: "Home", Icon: ChecklistIcon },
   { href: "/planner", label: "Planner", Icon: CalendarIcon },
   { href: "/income", label: "Income", Icon: IncomeIcon },
+  { href: "/debts", label: "Debts", Icon: DebtIcon },
   { href: "/analytics", label: "Stats", Icon: TrendingUpIcon },
   { href: "/insights", label: "Insights", Icon: GaugeIcon },
   { href: "/history", label: "History", Icon: ListIcon },

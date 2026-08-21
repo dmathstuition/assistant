@@ -232,6 +232,67 @@ export async function logContribution(id: string, amount: number) {
   revalidatePath("/dashboard");
 }
 
+// ---- Debts -----------------------------------------------------------
+
+export async function addDebt(formData: FormData) {
+  const { supabase, user } = await requireUser();
+  const creditor = String(formData.get("creditor") || "").trim();
+  if (!creditor) throw new Error("Enter who you owe.");
+  const amount = Number(formData.get("amount"));
+  if (!amount || amount <= 0) throw new Error("Enter a valid amount.");
+  const amount_paid = Number(formData.get("amount_paid")) || 0;
+  const month = String(formData.get("month") || "").trim() || new Date().toISOString().slice(0, 7);
+  const due_on = String(formData.get("due_on") || "");
+  const notes = String(formData.get("notes") || "") || null;
+  await supabase.from("debts").insert({
+    user_id: user.id,
+    creditor,
+    amount,
+    amount_paid: Math.min(amount_paid, amount),
+    month,
+    due_on: due_on || null,
+    notes,
+  });
+  revalidatePath("/debts");
+  revalidatePath("/dashboard");
+}
+
+export async function logDebtPayment(id: string, amount: number) {
+  const { supabase } = await requireUser();
+  if (!amount || amount <= 0) throw new Error("Enter a valid amount.");
+  // RLS scopes the select to the caller's own row.
+  const { data: debt } = await supabase
+    .from("debts")
+    .select("amount,amount_paid")
+    .eq("id", id)
+    .single();
+  if (!debt) throw new Error("Debt not found.");
+  const paid = Math.min(Number(debt.amount_paid) + amount, Number(debt.amount));
+  await supabase.from("debts").update({ amount_paid: paid }).eq("id", id);
+  revalidatePath("/debts");
+  revalidatePath("/dashboard");
+}
+
+export async function markDebtPaid(id: string) {
+  const { supabase } = await requireUser();
+  const { data: debt } = await supabase
+    .from("debts")
+    .select("amount")
+    .eq("id", id)
+    .single();
+  if (!debt) throw new Error("Debt not found.");
+  await supabase.from("debts").update({ amount_paid: Number(debt.amount) }).eq("id", id);
+  revalidatePath("/debts");
+  revalidatePath("/dashboard");
+}
+
+export async function deleteDebt(id: string) {
+  const { supabase } = await requireUser();
+  await supabase.from("debts").delete().eq("id", id);
+  revalidatePath("/debts");
+  revalidatePath("/dashboard");
+}
+
 type AssistantAction = {
   intent: string;
   amount?: number | null;

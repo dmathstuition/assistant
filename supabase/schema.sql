@@ -353,3 +353,26 @@ alter table public.expenses
 alter table public.expenses add column if not exists external_id text;
 create unique index if not exists uq_expenses_external
   on public.expenses(user_id, external_id) where external_id is not null;
+
+-- =====================================================================
+--  Debts (monthly): what you owe, how much you've paid, per month.
+--  "Debt rate" for a month = total owed that month ÷ income that month.
+-- =====================================================================
+create table if not exists public.debts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  creditor text not null,
+  amount numeric(14,2) not null check (amount >= 0),
+  amount_paid numeric(14,2) not null default 0 check (amount_paid >= 0),
+  month text not null,               -- YYYY-MM this debt belongs to
+  due_on date,
+  notes text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_debts_user_month on public.debts(user_id, month);
+
+alter table public.debts enable row level security;
+
+drop policy if exists "own debts" on public.debts;
+create policy "own debts" on public.debts for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
